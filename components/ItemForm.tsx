@@ -33,6 +33,7 @@ export function ItemForm({
   const [title, setTitle] = useState(item?.title ?? '')
   const [place, setPlace] = useState(item?.place ?? '')
   const [note, setNote] = useState(item?.note ?? '')
+  const [arrive, setArrive] = useState(item?.arrive_place ?? '')
   // 定位：座標加上給人看的說明
   const [pin, setPin] = useState<{ lat: number; lng: number; label: string } | null>(
     typeof item?.lat === 'number' && typeof item?.lng === 'number'
@@ -61,6 +62,7 @@ export function ItemForm({
       note: note.trim(),
       lat: pin?.lat ?? null,
       lng: pin?.lng ?? null,
+      arrive_place: arrive.trim(),
     }
     if (!input.title) return
     void save.run(async () => {
@@ -244,6 +246,18 @@ export function ItemForm({
             </ul>
           )}
         </div>
+        <Field label="抵達機場／車站">
+          <input
+            className={inputClass}
+            value={arrive}
+            onChange={(e) => setArrive(e.target.value)}
+            maxLength={80}
+            aria-describedby="arrive-hint"
+          />
+        </Field>
+        <p id="arrive-hint" className="text-xs text-zinc-500">
+          搭飛機或長途車才需要填。下一站的「怎麼去」會從這裡出發。
+        </p>
         <Field label="備註">
           <textarea
             className={`${inputClass} h-24 py-2`}

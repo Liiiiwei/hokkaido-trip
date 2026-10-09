@@ -13,6 +13,8 @@ export type Item = {
   place: string
   note: string
   kind: ItemKind
+  // 搭飛機或長途車才填：下一站的「怎麼去」從這裡出發
+  arrive_place?: string
   // 在地圖上定位過才有
   lat?: number | null
   lng?: number | null
@@ -25,7 +27,7 @@ export type ItemMember = { item_id: string; member_name: string }
 // 新增或編輯行程時送出的欄位
 export type ItemInput = Pick<
   Item,
-  'day' | 'start_time' | 'end_time' | 'title' | 'place' | 'note' | 'kind' | 'lat' | 'lng'
+  'day' | 'start_time' | 'end_time' | 'title' | 'place' | 'note' | 'kind' | 'lat' | 'lng' | 'arrive_place'
 >
 
 export type TripData = {

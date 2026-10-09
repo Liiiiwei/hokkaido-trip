@@ -74,3 +74,16 @@ describe('parseTripData 的座標', () => {
     }
   })
 })
+
+describe('parseTripData 的抵達地點', () => {
+  const base = { id: 'i1', day: '2030-05-02', title: '航班', kind: 'all' }
+  const parse = (extra: object) => parseTripData({ trip, items: [{ ...base, ...extra }] }).items[0]
+  it('保留有填的抵達地點', () => {
+    expect(parse({ arrive_place: '新千歲機場' }).arrive_place).toBe('新千歲機場')
+  })
+  it('沒填或不是文字時當成沒有', () => {
+    expect(parse({}).arrive_place).toBeUndefined()
+    expect(parse({ arrive_place: '' }).arrive_place).toBeUndefined()
+    expect(parse({ arrive_place: 3 }).arrive_place).toBeUndefined()
+  })
+})

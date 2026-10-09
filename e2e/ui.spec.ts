@@ -115,3 +115,26 @@ test('找不到地點時有提示，不定位也能儲存', async ({ page }) => 
   await expect(card.getByRole('link', { name: '怎麼去' })).toBeVisible()
   await expect(page.getByRole('button', { name: /當天地圖/ })).toHaveCount(0)
 })
+
+test('航班填了抵達機場，下一站的怎麼去從抵達機場出發', async ({ page }) => {
+  await mockGitHub(page)
+  await mockMaps(page, [])
+  await enter(page)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('開始時間').fill('10:00')
+  await dialog.getByLabel('標題').fill('飛札幌')
+  await dialog.getByLabel('地點', { exact: true }).fill('羽田機場')
+  await dialog.getByLabel('抵達機場／車站').fill('新千歲機場')
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  await expect(page.getByTestId('item-card').filter({ hasText: '飛札幌' })).toContainText('新千歲機場')
+
+  await page.getByRole('button', { name: '新增行程', exact: true }).click()
+  await dialog.getByLabel('開始時間').fill('13:00')
+  await dialog.getByLabel('標題').fill('飯店放行李')
+  await dialog.getByLabel('地點', { exact: true }).fill('札幌站')
+  await dialog.getByRole('button', { name: '儲存' }).click()
+
+  const card = page.getByTestId('item-card').filter({ hasText: '飯店放行李' })
+  const route = await card.getByRole('link', { name: /怎麼去/ }).getAttribute('href')
+  expect(new URL(route!).searchParams.get('origin')).toBe('新千歲機場')
+})

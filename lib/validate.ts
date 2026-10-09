@@ -54,6 +54,9 @@ export function parseTripData(value: unknown): TripData {
       note: text(i.note),
       kind: i.kind,
       ...coords(i.lat, i.lng),
+      ...(typeof i.arrive_place === 'string' && i.arrive_place !== ''
+        ? { arrive_place: i.arrive_place }
+        : {}),
       created_by: text(i.created_by),
       updated_at: text(i.updated_at),
     }

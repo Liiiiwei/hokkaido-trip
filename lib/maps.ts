@@ -1,7 +1,7 @@
 import { sortItems } from './schedule'
 import type { Item } from './types'
 
-type Spot = Pick<Item, 'place' | 'lat' | 'lng'>
+type Spot = Pick<Item, 'place' | 'lat' | 'lng' | 'arrive_place'>
 
 export type Pin = { id: string; n: number; title: string; lat: number; lng: number }
 
@@ -28,7 +28,8 @@ export function googlePlaceUrl(spot: Spot): string {
 // 在 Google 地圖查大眾運輸路線。沒有上一站就不帶起點，Google 會用目前位置
 export function googleTransitUrl(from: Spot | null, to: Spot): string {
   const params = new URLSearchParams({ api: '1' })
-  if (from) params.set('origin', pointOf(from))
+  // 上一站是航班或長途車時，人是在抵達地點，不是出發地點
+  if (from) params.set('origin', from.arrive_place || pointOf(from))
   params.set('destination', pointOf(to))
   params.set('travelmode', 'transit')
   return `https://www.google.com/maps/dir/?${params}`
@@ -49,7 +50,7 @@ export function previousStop(mine: Item[], item: Item): Item | null {
   const ordered = sortItems([...mine.filter((i) => i.id !== item.id), item])
   const at = ordered.findIndex((i) => i.id === item.id)
   for (let k = at - 1; k >= 0; k -= 1) {
-    if (hasSpot(ordered[k])) return ordered[k]
+    if (hasSpot(ordered[k]) || ordered[k].arrive_place) return ordered[k]
   }
   return null
 }

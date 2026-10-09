@@ -176,3 +176,29 @@ describe('changedFields 的座標', () => {
     expect(changedFields(original, { ...same, lat: null, lng: null })).toEqual({})
   })
 })
+
+describe('changedFields 的抵達地點', () => {
+  const original = item('i1', '航班')
+  const same = {
+    day: original.day,
+    start_time: original.start_time,
+    end_time: original.end_time,
+    title: original.title,
+    place: original.place,
+    note: original.note,
+    kind: original.kind,
+  }
+  it('填上抵達地點算是有改', () => {
+    expect(changedFields(original, { ...same, arrive_place: '新千歲機場' })).toEqual({
+      arrive_place: '新千歲機場',
+    })
+  })
+  it('清掉抵達地點算是有改', () => {
+    expect(changedFields({ ...original, arrive_place: '新千歲機場' }, { ...same, arrive_place: '' })).toEqual({
+      arrive_place: '',
+    })
+  })
+  it('本來就沒有、表單送出空字串，不算有改', () => {
+    expect(changedFields(original, { ...same, arrive_place: '' })).toEqual({})
+  })
+})

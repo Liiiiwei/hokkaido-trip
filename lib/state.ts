@@ -77,14 +77,17 @@ const INPUT_KEYS = [
   'kind',
   'lat',
   'lng',
+  'arrive_place',
 ] as const
+
+// 選填欄位沒填可能是 undefined、null 或空字串，都當成沒有
+const blank = (v: unknown) => (v === undefined || v === '' ? null : v)
 
 // 編輯表單送出時只留真的改過的欄位，才不會把別人同時改的其他欄位蓋回舊值
 export function changedFields(original: Item, input: ItemInput): Partial<ItemInput> {
   const patch: Partial<ItemInput> = {}
   for (const key of INPUT_KEYS) {
-    // 座標沒填可能是 undefined 或 null，兩者都當成沒定位
-    if ((original[key] ?? null) !== (input[key] ?? null)) Object.assign(patch, { [key]: input[key] })
+    if (blank(original[key]) !== blank(input[key])) Object.assign(patch, { [key]: input[key] })
   }
   return patch
 }

@@ -78,6 +78,9 @@ export function ItemCard({
         </div>
         <div className="mt-1 text-base font-semibold">{item.title}</div>
         {item.place && <div className="mt-0.5 text-sm text-zinc-600">{item.place}</div>}
+        {item.arrive_place && (
+          <div className="mt-0.5 text-sm text-zinc-600">抵達：{item.arrive_place}</div>
+        )}
         {item.note && (
           <div className="mt-1 whitespace-pre-wrap text-sm text-zinc-500">{item.note}</div>
         )}

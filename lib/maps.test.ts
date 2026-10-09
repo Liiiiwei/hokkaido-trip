@@ -80,3 +80,20 @@ describe('previousStop', () => {
     expect(previousStop([hotel, canal], theirs)?.id).toBe('c')
   })
 })
+
+describe('抵達地點', () => {
+  const flight = item({ id: 'f', start_time: '10:00', place: '羽田機場', lat: 35.55, lng: 139.78, arrive_place: '新千歲機場' })
+  it('上一站有抵達地點時，從抵達地點出發，不用出發地的座標', () => {
+    const url = googleTransitUrl(flight, item({ place: '札幌站' }))
+    expect(param(url, 'origin')).toBe('新千歲機場')
+  })
+  it('只填抵達地點、沒填出發地點的行程也算上一站', () => {
+    const ride = item({ id: 'r', start_time: '09:00', place: '', arrive_place: '旭川站' })
+    const next = item({ id: 'n', start_time: '12:00', place: '動物園' })
+    expect(previousStop([ride, next], next)?.id).toBe('r')
+  })
+  it('去這一站的終點仍是它的地點，不是它的抵達地點', () => {
+    const url = googleTransitUrl(null, flight)
+    expect(param(url, 'destination')).toBe('35.55,139.78')
+  })
+})
