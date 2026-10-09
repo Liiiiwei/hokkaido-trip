@@ -61,8 +61,6 @@ export function DayPanel({
   data,
   date,
   me,
-  onlyMine,
-  onToggleMine,
   onEditDay,
   onEditItem,
   onAdd,
@@ -71,8 +69,6 @@ export function DayPanel({
   data: TripData
   date: string
   me: string
-  onlyMine: boolean
-  onToggleMine: (value: boolean) => void
   onEditDay: () => void
   onEditItem: (item: Item) => void
   onAdd: () => void
@@ -80,10 +76,10 @@ export function DayPanel({
 }) {
   const day = data.days.find((d) => d.date === date)
   const todays = data.items.filter((i) => i.day === date)
+  // 我會去的行程：全員的加上我加入的分開行程，用來算「怎麼去」的上一站
   const mine = filterMine(todays, data.itemMembers, me)
-  const shown = onlyMine ? mine : todays
-  const blocks = buildBlocks(shown)
-  const pins = pinsOf(shown)
+  const blocks = buildBlocks(todays)
+  const pins = pinsOf(todays)
   const stays = stayPinsOf(data.days, date)
   // 當天第一站沒有上一站，就從早上出發的住宿（前一晚住的地方）算起
   const morning = staySpot(data.days.find((d) => d.date === prevDate(date)))
@@ -167,22 +163,9 @@ export function DayPanel({
           </button>
         ) : (
           <p className="min-w-0 flex-1 text-xs leading-snug text-zinc-500">
-            {shown.length > 0 ? '在行程的地點旁按「找地點」，這天的地圖就會出現。' : ''}
+            {todays.length > 0 ? '在行程的地點旁按「找地點」，這天的地圖就會出現。' : ''}
           </p>
         )}
-        <label
-          className={`inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-lg border bg-white px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
-            onlyMine ? 'border-zinc-900 font-semibold text-zinc-900' : 'border-zinc-300 text-zinc-700'
-          }`}
-        >
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-accent"
-            checked={onlyMine}
-            onChange={(e) => onToggleMine(e.target.checked)}
-          />
-          只看我的
-        </label>
       </div>
       {mapOpen && markers.length > 0 && (
         <div className="mt-2">
@@ -194,15 +177,11 @@ export function DayPanel({
       {blocks.length === 0 ? (
         <div className="mt-10 flex flex-col items-center text-center">
           <CalendarPlus size={28} className="text-zinc-300" />
-          <p className="mt-2 text-sm text-zinc-500">
-            {todays.length === 0 ? '這天還沒有行程' : '你這天沒有加入任何分開行程'}
-          </p>
-          {todays.length === 0 && (
-            <button type="button" onClick={onAdd} className={`${ghostClass} mt-3`}>
-              <CalendarPlus size={16} />
-              新增第一個行程
-            </button>
-          )}
+          <p className="mt-2 text-sm text-zinc-500">這天還沒有行程</p>
+          <button type="button" onClick={onAdd} className={`${ghostClass} mt-3`}>
+            <CalendarPlus size={16} />
+            新增第一個行程
+          </button>
         </div>
       ) : (
         // key 帶日期：換一天時整條時間軸重新進場

@@ -6,11 +6,9 @@ import {
   adoptKeyFromUrl,
   loadKey,
   loadName,
-  loadOnlyMine,
   parseKey,
-  saveOnlyMine,
 } from '@/lib/identity'
-import { defaultDate, filterMine, listDates, localToday } from '@/lib/schedule'
+import { defaultDate, listDates, localToday } from '@/lib/schedule'
 import { setKey } from '@/lib/store'
 import type { Item } from '@/lib/types'
 import { useTrip } from '@/lib/useTrip'
@@ -112,8 +110,6 @@ export function TripApp() {
 function TripView({ me, onRename }: { me: string; onRename: (name: string) => void }) {
   const { state, connected, apply, retry, reload } = useTrip()
   const [selected, setSelected] = useState<string | null>(null)
-  // TripView 只在瀏覽器端讀完裝置資料後才出現，所以可以直接讀
-  const [onlyMine, setOnlyMine] = useState(() => loadOnlyMine())
   const [sheet, setSheet] = useState<SheetState>(null)
   useVersionWatch(sheet !== null)
 
@@ -158,11 +154,6 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
         data={data}
         date={current}
         me={me}
-        onlyMine={onlyMine}
-        onToggleMine={(value) => {
-          setOnlyMine(value)
-          saveOnlyMine(value)
-        }}
         onEditDay={() => setSheet({ type: 'day' })}
         onEditItem={(item) => setSheet({ type: 'item', item })}
         onAdd={() => setSheet({ type: 'item', item: null })}
@@ -211,7 +202,7 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
       )}
       {sheet?.type === 'map' && (
         <TripMap
-          items={onlyMine ? filterMine(data.items, data.itemMembers, me) : data.items}
+          items={data.items}
           days={data.days}
           onPickDay={(date) => {
             setSelected(date)

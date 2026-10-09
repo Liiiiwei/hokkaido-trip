@@ -228,3 +228,18 @@ test('備註裡的網址可以直接點', async ({ page }) => {
   const link = page.getByTestId('item-card').filter({ hasText: '訂位' }).getByRole('link', { name: /example\.com/ })
   await expect(link).toHaveAttribute('href', 'https://www.example.com/book')
 })
+
+test('沒有「只看我的」開關；以前開過的人也看得到全部行程', async ({ page }) => {
+  await mockGitHub(page)
+  // 以前的版本把開關狀態記在裝置上
+  await page.addInitScript(() => {
+    localStorage.setItem('hokkaido-trip:only-mine', '1')
+  })
+  await enter(page)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('分開行動').check()
+  await dialog.getByLabel('標題').fill('別人的行程')
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  await expect(page.getByTestId('item-card').filter({ hasText: '別人的行程' })).toBeVisible()
+  await expect(page.getByText('只看我的')).toHaveCount(0)
+})
