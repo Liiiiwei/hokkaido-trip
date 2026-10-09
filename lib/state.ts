@@ -29,6 +29,7 @@ export function applyChange(data: TripData, change: Change): TripData {
     return {
       ...data,
       trip: {
+        ...data.trip,
         title: String(next.title),
         start_date: String(next.start_date),
         end_date: String(next.end_date),
@@ -40,7 +41,9 @@ export function applyChange(data: TripData, change: Change): TripData {
     const key = String((eventType === 'DELETE' ? prev : next)?.date)
     const rest = data.days.filter((d) => d.date !== key)
     if (eventType === 'DELETE' || !next) return { ...data, days: rest }
-    return { ...data, days: [...rest, next as Day] }
+    // 疊在原本那一筆上面，送來的資料沒帶到的欄位才不會不見
+    const old = data.days.find((d) => d.date === key)
+    return { ...data, days: [...rest, { ...old, ...next } as Day] }
   }
 
   if (table === 'items') {
@@ -53,7 +56,8 @@ export function applyChange(data: TripData, change: Change): TripData {
         itemMembers: data.itemMembers.filter((m) => m.item_id !== id),
       }
     }
-    return { ...data, items: [...rest, next as Item] }
+    const old = data.items.find((i) => i.id === id)
+    return { ...data, items: [...rest, { ...old, ...next } as Item] }
   }
 
   // item_members：先移掉舊鍵與新鍵，再視情況加回新列

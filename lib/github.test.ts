@@ -233,3 +233,13 @@ describe('沒有變化就不寫入', () => {
     expect(remote.io.write).not.toHaveBeenCalled()
   })
 })
+
+describe('舊版分頁存檔', () => {
+  it('讀進來再寫回去，不認得的欄位還在檔案裡', () => {
+    const raw = { ...base, items: [{ ...base.items[0], future_field: '新版才有' }], extra: { a: 1 } }
+    const stored = Buffer.from(JSON.stringify(raw), 'utf8').toString('base64')
+    const back = JSON.parse(Buffer.from(encodeContent(decodeContent(stored)), 'base64').toString('utf8'))
+    expect(back.items[0].future_field).toBe('新版才有')
+    expect(back.extra).toEqual({ a: 1 })
+  })
+})

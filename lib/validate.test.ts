@@ -87,3 +87,28 @@ describe('parseTripData 的抵達地點', () => {
     expect(parse({ arrive_place: 3 }).arrive_place).toBeUndefined()
   })
 })
+
+describe('parseTripData 保留不認得的欄位', () => {
+  // 新版網站加了欄位後，還開著舊版分頁的人存檔時不能把新欄位洗掉
+  const future = {
+    trip: { ...trip, currency: 'JPY' },
+    days: [{ date: '2030-05-01', city: '札幌', note: '', weather: '雪' }],
+    items: [{ ...fullItem, budget: 3000, tags: ['雪'] }],
+    itemMembers: [{ item_id: 'i1', member_name: '小明', role: '司機' }],
+    expenses: [{ who: '小明', amount: 500 }],
+  }
+  it('最外層、旅程、每天、行程、成員上不認得的欄位都原樣留著', () => {
+    expect(parseTripData(future)).toEqual(future)
+  })
+  it('認得但壞掉的欄位照樣修掉，不會因為保留而留下壞值', () => {
+    const out = parseTripData({
+      trip,
+      items: [{ ...fullItem, lat: 999, lng: 'x', arrive_place: 3, place: 7, budget: 1 }],
+    }).items[0] as unknown as Record<string, unknown>
+    expect(out.lat).toBeUndefined()
+    expect(out.lng).toBeUndefined()
+    expect(out.arrive_place).toBeUndefined()
+    expect(out.place).toBe('')
+    expect(out.budget).toBe(1)
+  })
+})

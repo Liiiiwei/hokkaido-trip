@@ -32,19 +32,24 @@ function records(v: unknown): Rec[] {
 }
 
 // 檢查資料檔的結構。有人直接在 GitHub 上改檔案時可能漏欄位或打錯：
-// 選填欄位補預設值，必要欄位缺了就丟 bad_data，讓畫面顯示說明而不是當掉
+// 選填欄位補預設值，必要欄位缺了就丟 bad_data，讓畫面顯示說明而不是當掉。
+// 不認得的欄位原樣留著：新版網站加了欄位後，還開著舊版分頁的人存檔才不會把它洗掉
 export function parseTripData(value: unknown): TripData {
   if (!isRecord(value) || !isRecord(value.trip) || !Array.isArray(value.items)) {
     throw new StoreError('bad_data')
   }
   const days: Day[] = records(value.days).map((d) => ({
+    ...d,
     date: required(d.date),
     city: text(d.city),
     note: text(d.note),
   }))
   const items: Item[] = records(value.items).map((i) => {
     if (i.kind !== 'all' && i.kind !== 'split') throw new StoreError('bad_data')
+    // 這三個選填欄位壞掉時要整個拿掉，所以先從原資料抽出來
+    const { lat, lng, arrive_place, ...rest } = i
     return {
+      ...rest,
       id: required(i.id),
       day: required(i.day),
       start_time: time(i.start_time),
@@ -53,20 +58,21 @@ export function parseTripData(value: unknown): TripData {
       place: text(i.place),
       note: text(i.note),
       kind: i.kind,
-      ...coords(i.lat, i.lng),
-      ...(typeof i.arrive_place === 'string' && i.arrive_place !== ''
-        ? { arrive_place: i.arrive_place }
-        : {}),
+      ...coords(lat, lng),
+      ...(typeof arrive_place === 'string' && arrive_place !== '' ? { arrive_place } : {}),
       created_by: text(i.created_by),
       updated_at: text(i.updated_at),
     }
   })
   const itemMembers: ItemMember[] = records(value.itemMembers).map((m) => ({
+    ...m,
     item_id: required(m.item_id),
     member_name: required(m.member_name),
   }))
   return {
+    ...value,
     trip: {
+      ...value.trip,
       title: required(value.trip.title),
       start_date: required(value.trip.start_date),
       end_date: required(value.trip.end_date),

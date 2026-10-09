@@ -202,3 +202,41 @@ describe('changedFields 的抵達地點', () => {
     expect(changedFields(original, { ...same, arrive_place: '' })).toEqual({})
   })
 })
+
+describe('applyChange 保留不認得的欄位', () => {
+  const future = {
+    ...base,
+    trip: { ...base.trip, currency: 'JPY' },
+    days: [{ date: '2027-01-09', city: '東京', note: '', weather: '雪' }],
+    items: [{ ...item('i1'), budget: 3000 }],
+  } as unknown as TripData
+  it('改旅程名稱時留著旅程上的其他欄位', () => {
+    const out = applyChange(future, {
+      table: 'trip',
+      eventType: 'UPDATE',
+      new: { title: '新名字', start_date: '2027-01-09', end_date: '2027-01-17' },
+      old: null,
+    })
+    expect(out.trip).toEqual({ ...future.trip, title: '新名字' })
+  })
+  it('改某天的住宿時留著那天的其他欄位', () => {
+    const out = applyChange(future, {
+      table: 'days',
+      eventType: 'UPDATE',
+      new: { date: '2027-01-09', city: '橫濱', note: '' },
+      old: null,
+    })
+    expect(out.days).toEqual([{ date: '2027-01-09', city: '橫濱', note: '', weather: '雪' }])
+  })
+  it('更新行程時，送來的資料沒帶到的欄位留著', () => {
+    const { budget: _drop, ...known } = future.items[0] as unknown as Record<string, unknown>
+    void _drop
+    const out = applyChange(future, {
+      table: 'items',
+      eventType: 'UPDATE',
+      new: { ...known, title: '改過' },
+      old: null,
+    })
+    expect(out.items[0]).toMatchObject({ title: '改過', budget: 3000 })
+  })
+})
