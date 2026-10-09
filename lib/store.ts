@@ -1,15 +1,20 @@
-import { StoreError, commit, readFile, writeFile, type Io } from './github'
+import { setTrip } from './changes'
+import { StoreError } from './errors'
+import { commit, readFile, writeFile, type Io, type Snapshot } from './github'
 import { applyChange } from './state'
 import type { Day, Item, ItemInput, ItemMember, Trip, TripData } from './types'
 
 let key = ''
+// 上次讀到的結果；下次讀的時候帶著它的 etag 去問，沒變就不佔額度
+let last: Snapshot | undefined
 
 export function setKey(value: string): void {
   key = value
+  last = undefined
 }
 
 const io: Io = {
-  read: () => readFile(key),
+  read: async () => (last = await readFile(key, undefined, last)),
   write: (data, sha, message) => writeFile(key, data, sha, message),
 }
 
@@ -32,10 +37,7 @@ export function fetchAll(): Promise<TripData> {
 }
 
 export async function updateTrip(trip: Trip): Promise<Trip> {
-  await mutate(
-    (d) => applyChange(d, { table: 'trip', eventType: 'UPDATE', new: trip, old: null }),
-    '更新旅程名稱或日期',
-  )
+  await mutate(setTrip(trip), '更新旅程名稱或日期')
   return trip
 }
 

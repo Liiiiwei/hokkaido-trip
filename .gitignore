@@ -45,3 +45,7 @@ next-env.d.ts
 
 # 規格與計畫含行程細節，只留在本機
 docs/
+
+# Playwright 的輸出
+/test-results/
+/playwright-report/

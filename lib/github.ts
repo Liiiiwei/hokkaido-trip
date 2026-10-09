@@ -1,18 +1,12 @@
 import { DATA_REPO } from './config'
+import { StoreError, type ErrorCode } from './errors'
 import type { TripData } from './types'
+import { parseTripData } from './validate'
 
-export type ErrorCode = 'bad_key' | 'conflict' | 'network' | 'gone' | 'name_taken'
+export { StoreError, type ErrorCode }
 
-export class StoreError extends Error {
-  code: ErrorCode
-  constructor(code: ErrorCode) {
-    super(code)
-    this.name = 'StoreError'
-    this.code = code
-  }
-}
-
-export type Snapshot = { data: TripData; sha: string }
+// etag 用來問 GitHub「和上次一樣嗎」；一樣時回 304，不佔 API 額度
+export type Snapshot = { data: TripData; sha: string; etag?: string | null }
 
 const API = `https://api.github.com/repos/${DATA_REPO.owner}/${DATA_REPO.repo}/contents/${DATA_REPO.path}`
 const MAX_ATTEMPTS = 5
@@ -40,12 +34,26 @@ export function encodeContent(data: TripData): string {
 export function decodeContent(base64: string): TripData {
   const binary = atob(base64.replace(/\s/g, ''))
   const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0))
-  return JSON.parse(new TextDecoder().decode(bytes)) as TripData
+  let value: unknown
+  try {
+    value = JSON.parse(new TextDecoder().decode(bytes))
+  } catch {
+    throw new StoreError('bad_data')
+  }
+  return parseTripData(value)
 }
 
-function codeOf(status: number): ErrorCode {
+function codeOf(res: Response): ErrorCode {
+  const status = res.status
   if (status === 401 || status === 404) return 'bad_key'
   if (status === 409 || status === 422) return 'conflict'
+  if (status === 429) return 'busy'
+  if (status === 403) {
+    // 額度用完也是 403，靠標頭分辨；其餘的 403 是權杖沒有寫入權限
+    const limited =
+      res.headers.get('x-ratelimit-remaining') === '0' || res.headers.has('retry-after')
+    return limited ? 'busy' : 'read_only'
+  }
   return 'network'
 }
 
@@ -57,18 +65,25 @@ async function call(fetchFn: typeof fetch, url: string, init: RequestInit): Prom
   } catch {
     throw new StoreError('network')
   }
-  if (!res.ok) throw new StoreError(codeOf(res.status))
+  // 304 是「和上次一樣」，由呼叫端處理
+  if (!res.ok && res.status !== 304) throw new StoreError(codeOf(res))
   return res
 }
 
-// GitHub API 的回應預設會被瀏覽器快取 60 秒，所以一律不走快取
-export async function readFile(key: string, fetchFn: typeof fetch = fetch): Promise<Snapshot> {
+// GitHub API 的回應預設會被瀏覽器快取 60 秒，所以一律不走快取。
+// cached 是上次讀到的結果：帶著它的 etag 去問，沒變就直接沿用
+export async function readFile(
+  key: string,
+  fetchFn: typeof fetch = fetch,
+  cached?: Snapshot,
+): Promise<Snapshot> {
   const res = await call(fetchFn, `${API}?ref=${DATA_REPO.branch}`, {
-    headers: headers(key),
+    headers: cached?.etag ? { ...headers(key), 'If-None-Match': cached.etag } : headers(key),
     cache: 'no-store',
   })
+  if (res.status === 304 && cached) return cached
   const body = (await res.json()) as { content: string; sha: string }
-  return { data: decodeContent(body.content), sha: body.sha }
+  return { data: decodeContent(body.content), sha: body.sha, etag: res.headers.get('etag') }
 }
 
 // sha 是讀到的版本代號；這段時間有別人存過，GitHub 會拒絕
@@ -109,6 +124,8 @@ export async function commit(
     if (attempt > 0) await wait(RETRY_STEP_MS * attempt)
     const snap = await io.read()
     const next = change(snap.data)
+    // 沒有實際變化（例如刪掉已經不存在的行程）就不留空的修改紀錄
+    if (JSON.stringify(next) === JSON.stringify(snap.data)) return snap.data
     try {
       await io.write(next, snap.sha, message)
       return next

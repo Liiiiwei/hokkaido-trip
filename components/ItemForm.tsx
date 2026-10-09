@@ -74,7 +74,7 @@ export function ItemForm({
   }
 
   return (
-    <Sheet title={item ? '編輯行程' : '新增行程'} onClose={onClose}>
+    <Sheet title={item ? '編輯行程' : '新增行程'} onClose={onClose} busy={busy}>
       <form className="space-y-3" onSubmit={submit}>
         <Field label="日期">
           <select className={inputClass} value={day} onChange={(e) => setDay(e.target.value)}>

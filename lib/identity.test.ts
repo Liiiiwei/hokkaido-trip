@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  adoptKeyFromUrl,
   loadKey,
   loadName,
   loadOnlyMine,
@@ -14,6 +15,7 @@ import {
 afterEach(() => {
   vi.restoreAllMocks()
   window.localStorage.clear()
+  window.history.replaceState(null, '', '/')
 })
 
 describe('normalizeName', () => {
@@ -77,5 +79,27 @@ describe('只看我的開關', () => {
     expect(loadOnlyMine()).toBe(true)
     saveOnlyMine(false)
     expect(loadOnlyMine()).toBe(false)
+  })
+})
+
+describe('adoptKeyFromUrl', () => {
+  it('把網址上的權杖存起來，並從網址列拿掉', () => {
+    window.location.hash = '#k=abc123'
+    expect(adoptKeyFromUrl()).toBe('abc123')
+    expect(window.location.hash).toBe('')
+    expect(loadKey()).toBe('abc123')
+  })
+  it('裝置存不進去時把權杖留在網址上，重新整理才進得來', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('denied')
+    })
+    window.location.hash = '#k=abc123'
+    expect(adoptKeyFromUrl()).toBe('abc123')
+    expect(window.location.hash).toBe('#k=abc123')
+  })
+  it('網址上沒有權杖時回傳 null，不動網址', () => {
+    window.location.hash = '#other'
+    expect(adoptKeyFromUrl()).toBeNull()
+    expect(window.location.hash).toBe('#other')
   })
 })

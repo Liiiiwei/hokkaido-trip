@@ -20,7 +20,7 @@ export function RenameForm({
   const name = normalizeName(raw)
 
   return (
-    <Sheet title="改名" onClose={onClose}>
+    <Sheet title="改名" onClose={onClose} busy={pending}>
       <form
         className="space-y-3"
         onSubmit={(e) => {

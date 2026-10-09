@@ -17,11 +17,14 @@ function read(key: string): string | null {
   }
 }
 
-function write(key: string, value: string): void {
+// 回傳有沒有存成功
+function write(key: string, value: string): boolean {
   try {
     window.localStorage.setItem(key, value)
+    return true
   } catch {
     // 無痕模式或被封鎖時存不了；這次照常使用，下次再問一次名字
+    return false
   }
 }
 
@@ -52,6 +55,17 @@ export function loadKey(): string | null {
   return read(KEY_KEY) || null
 }
 
-export function saveKey(key: string): void {
-  write(KEY_KEY, key)
+export function saveKey(key: string): boolean {
+  return write(KEY_KEY, key)
+}
+
+// 網址上有權杖就收下來。存得進裝置才把它從網址列拿掉（避免截圖或轉貼外流）；
+// 存不進去就留著，這樣重新整理還進得來
+export function adoptKeyFromUrl(): string | null {
+  const key = parseKey(window.location.hash)
+  if (!key) return null
+  if (saveKey(key)) {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+  }
+  return key
 }

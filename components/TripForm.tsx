@@ -36,7 +36,7 @@ export function TripForm({
   }
 
   return (
-    <Sheet title="編輯旅程" onClose={onClose}>
+    <Sheet title="編輯旅程" onClose={onClose} busy={pending}>
       <form
         className="space-y-3"
         onSubmit={(e) => {

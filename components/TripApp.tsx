@@ -1,7 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { loadKey, loadName, loadOnlyMine, parseKey, saveKey, saveOnlyMine } from '@/lib/identity'
+import {
+  adoptKeyFromUrl,
+  loadKey,
+  loadName,
+  loadOnlyMine,
+  parseKey,
+  saveOnlyMine,
+} from '@/lib/identity'
 import { defaultDate, listDates, localToday } from '@/lib/schedule'
 import { setKey } from '@/lib/store'
 import type { Item } from '@/lib/types'
@@ -67,17 +74,21 @@ export function TripApp() {
 
   // 只能在瀏覽器讀網址與裝置資料，所以放在 effect 裡
   useEffect(() => {
-    const fromLink = parseKey(window.location.hash)
-    if (fromLink) {
-      saveKey(fromLink)
-      // 權杖不留在網址列，避免截圖或轉貼時外流
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
-    }
-    const key = fromLink ?? loadKey()
+    const key = adoptKeyFromUrl() ?? loadKey()
     if (key) setKey(key)
     // 只能在瀏覽器讀網址與裝置資料，伺服器預先產生的畫面沒有這些
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setBoot({ ready: true, hasKey: !!key, me: loadName() })
+
+    // 頁面開著時又點了一次分享連結（例如主揪換了新鑰匙）：只有 # 後面變了，
+    // 瀏覽器不會重新載入，所以自己收下新鑰匙再重新整理
+    const onHashChange = () => {
+      if (!parseKey(window.location.hash)) return
+      adoptKeyFromUrl()
+      window.location.reload()
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
   if (!boot.ready) return <LoadingSkeleton />
@@ -104,6 +115,14 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
   if (state.status === 'error') return <ErrorScreen onRetry={retry} />
   if (state.status === 'bad_key') {
     return <Notice title="連結失效" body="請跟主揪要新的連結。" />
+  }
+  if (state.status === 'bad_data') {
+    return (
+      <Notice
+        title="行程資料檔格式壞了"
+        body="請跟主揪說，他可以從 GitHub 的修改紀錄還原。"
+      />
+    )
   }
 
   const { data } = state

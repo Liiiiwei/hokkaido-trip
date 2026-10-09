@@ -11,6 +11,7 @@ export type TripState =
   | { status: 'loading' }
   | { status: 'error' }
   | { status: 'bad_key' }
+  | { status: 'bad_data' }
   | { status: 'ready'; data: TripData }
 
 export function useTrip() {
@@ -28,8 +29,9 @@ export function useTrip() {
         setState({ status: 'bad_key' })
         return
       }
+      const broken = e instanceof StoreError && e.code === 'bad_data'
       setConnected(false)
-      setState((s) => (s.status === 'ready' ? s : { status: 'error' }))
+      setState((s) => (s.status === 'ready' ? s : { status: broken ? 'bad_data' : 'error' }))
     }
   }, [])
 

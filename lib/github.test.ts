@@ -56,7 +56,7 @@ describe('readFile', () => {
   it('帶著權杖、不走快取，回傳資料與版本代號', async () => {
     const fetchFn = vi.fn(async () => response(200, { content: encodeContent(base), sha: 'abc' }))
     const snap = await readFile('KEY', fetchFn as unknown as typeof fetch)
-    expect(snap).toEqual({ data: base, sha: 'abc' })
+    expect(snap).toEqual({ data: base, sha: 'abc', etag: null })
     const [url, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit]
     expect(url).toContain('/contents/trip.json')
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer KEY')
@@ -153,9 +153,10 @@ describe('commit', () => {
 
   it('一直衝突時試五次後放棄', async () => {
     const remote = fakeRemote(base)
+    // 每次要存之前都被別人搶先一步
     const change = (data: TripData) => {
       remote.someoneElse((d) => d)
-      return data
+      return join('小明')(data)
     }
     const waits: number[] = []
     const wait = async (ms: number) => {
@@ -173,6 +174,62 @@ describe('commit', () => {
       throw new StoreError('gone')
     }
     await expect(commit(remote.io, change, 'm')).rejects.toMatchObject({ code: 'gone' })
+    expect(remote.io.write).not.toHaveBeenCalled()
+  })
+})
+
+describe('錯誤分類', () => {
+  const failing = (status: number, headers: Record<string, string> = {}) =>
+    (async () => new Response('{}', { status, headers })) as unknown as typeof fetch
+
+  it('429 與額度用完的 403 是忙線，不是斷線', async () => {
+    await expect(readFile('KEY', failing(429))).rejects.toMatchObject({ code: 'busy' })
+    await expect(
+      readFile('KEY', failing(403, { 'x-ratelimit-remaining': '0' })),
+    ).rejects.toMatchObject({ code: 'busy' })
+    await expect(readFile('KEY', failing(403, { 'retry-after': '60' }))).rejects.toMatchObject({
+      code: 'busy',
+    })
+  })
+  it('其他 403 是權杖只能看不能改', async () => {
+    await expect(writeFile('KEY', base, 'abc', 'm', failing(403))).rejects.toMatchObject({
+      code: 'read_only',
+    })
+  })
+})
+
+describe('用 ETag 省額度', () => {
+  it('回傳這次的 ETag', async () => {
+    const fetchFn = (async () =>
+      new Response(JSON.stringify({ content: encodeContent(base), sha: 'abc' }), {
+        status: 200,
+        headers: { etag: '"e1"' },
+      })) as unknown as typeof fetch
+    expect((await readFile('KEY', fetchFn)).etag).toBe('"e1"')
+  })
+  it('帶著上次的 ETag 詢問，304 時沿用上次的資料', async () => {
+    const cached = { data: base, sha: 'abc', etag: '"e1"' }
+    const fetchFn = vi.fn(async () => new Response(null, { status: 304 }))
+    const snap = await readFile('KEY', fetchFn as unknown as typeof fetch, cached)
+    expect(snap).toBe(cached)
+    const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit]
+    expect((init.headers as Record<string, string>)['If-None-Match']).toBe('"e1"')
+  })
+})
+
+describe('資料檔壞掉', () => {
+  const b64 = (text: string) => Buffer.from(text, 'utf8').toString('base64')
+  it('不是 JSON 或結構不對時丟 bad_data，不是讓畫面當掉', () => {
+    expect(() => decodeContent(b64('這不是 JSON'))).toThrow('bad_data')
+    expect(() => decodeContent(b64('{"foo":1}'))).toThrow('bad_data')
+  })
+})
+
+describe('沒有變化就不寫入', () => {
+  it('修改後資料和原本一樣時不留空的修改紀錄', async () => {
+    const remote = fakeRemote(base)
+    const out = await commit(remote.io, (d) => ({ ...d, items: [...d.items] }), '刪除行程')
+    expect(out).toEqual(base)
     expect(remote.io.write).not.toHaveBeenCalled()
   })
 })

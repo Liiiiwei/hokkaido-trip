@@ -22,7 +22,7 @@ export function DayForm({
   const { pending, error, run } = useAction()
 
   return (
-    <Sheet title={`${dayLabel(day.date)} 住宿與備註`} onClose={onClose}>
+    <Sheet title={`${dayLabel(day.date)} 住宿與備註`} onClose={onClose} busy={pending}>
       <form
         className="space-y-3"
         onSubmit={(e) => {
