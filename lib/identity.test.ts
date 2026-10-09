@@ -4,12 +4,10 @@ import {
   adoptKeyFromUrl,
   loadKey,
   loadName,
-  loadOnlyMine,
   normalizeName,
   parseKey,
   saveKey,
   saveName,
-  saveOnlyMine,
 } from './identity'
 
 afterEach(() => {
@@ -49,8 +47,6 @@ describe('裝置上的名字', () => {
     })
     expect(loadName()).toBeNull()
     expect(() => saveName('小明')).not.toThrow()
-    expect(loadOnlyMine()).toBe(false)
-    expect(() => saveOnlyMine(true)).not.toThrow()
   })
 })
 
@@ -72,15 +68,6 @@ describe('鑰匙', () => {
   })
 })
 
-describe('只看我的開關', () => {
-  it('預設關閉，存了讀得回來', () => {
-    expect(loadOnlyMine()).toBe(false)
-    saveOnlyMine(true)
-    expect(loadOnlyMine()).toBe(true)
-    saveOnlyMine(false)
-    expect(loadOnlyMine()).toBe(false)
-  })
-})
 
 describe('adoptKeyFromUrl', () => {
   it('把網址上的權杖存起來，並從網址列拿掉', () => {
