@@ -2,7 +2,15 @@ export type ItemKind = 'all' | 'split'
 
 export type Trip = { title: string; start_date: string; end_date: string }
 
-export type Day = { date: string; city: string; note: string }
+export type Day = {
+  date: string
+  city: string
+  note: string
+  // 當晚住宿的名稱；在地圖上定位過才有座標
+  stay?: string
+  lat?: number | null
+  lng?: number | null
+}
 
 export type Item = {
   id: string

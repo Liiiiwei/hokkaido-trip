@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { googlePlaceUrl, googleTransitUrl, pinsOf, previousStop } from './maps'
-import type { Item } from './types'
+import {
+  googlePlaceUrl,
+  googleTransitUrl,
+  overviewOf,
+  pinsOf,
+  previousStop,
+  stayPinsOf,
+  staySpot,
+} from './maps'
+import type { Day, Item } from './types'
 
 const item = (over: Partial<Item>): Item => ({
   id: 'x',
@@ -95,5 +103,85 @@ describe('抵達地點', () => {
   it('去這一站的終點仍是它的地點，不是它的抵達地點', () => {
     const url = googleTransitUrl(null, flight)
     expect(param(url, 'destination')).toBe('35.55,139.78')
+  })
+})
+
+const day = (date: string, over: Partial<Day> = {}): Day => ({ date, city: '', note: '', ...over })
+
+describe('stayPinsOf', () => {
+  it('當天地圖放前一晚與當晚的住宿', () => {
+    const days = [
+      day('2030-05-01', { stay: 'A 飯店', lat: 1, lng: 1 }),
+      day('2030-05-02', { stay: 'B 民宿', lat: 2, lng: 2 }),
+      day('2030-05-03', { stay: 'C', lat: 3, lng: 3 }),
+    ]
+    expect(stayPinsOf(days, '2030-05-02')).toEqual([
+      { title: 'A 飯店', lat: 1, lng: 1 },
+      { title: 'B 民宿', lat: 2, lng: 2 },
+    ])
+  })
+  it('連住同一間只放一個', () => {
+    const days = [
+      day('2030-05-01', { stay: 'A', lat: 1, lng: 1 }),
+      day('2030-05-02', { stay: 'A', lat: 1, lng: 1 }),
+    ]
+    expect(stayPinsOf(days, '2030-05-02')).toEqual([{ title: 'A', lat: 1, lng: 1 }])
+  })
+  it('沒定位的住宿不放；沒填名稱時用城市當名稱', () => {
+    const days = [day('2030-05-01', { stay: '沒定位' }), day('2030-05-02', { city: '札幌', lat: 2, lng: 2 })]
+    expect(stayPinsOf(days, '2030-05-02')).toEqual([{ title: '札幌', lat: 2, lng: 2 }])
+  })
+  it('跨月份也找得到前一晚', () => {
+    const days = [day('2030-04-30', { stay: 'A', lat: 1, lng: 1 })]
+    expect(stayPinsOf(days, '2030-05-01')).toEqual([{ title: 'A', lat: 1, lng: 1 }])
+  })
+})
+
+describe('staySpot', () => {
+  it('有住宿名稱或座標就能當路線起點', () => {
+    expect(staySpot(day('2030-05-01', { stay: 'A 飯店' }))).toEqual({ title: 'A 飯店', place: 'A 飯店' })
+    expect(staySpot(day('2030-05-01', { city: '札幌', lat: 1, lng: 2 }))).toEqual({
+      title: '札幌',
+      place: '',
+      lat: 1,
+      lng: 2,
+    })
+  })
+  it('只填城市、或那天沒資料，不能當起點', () => {
+    expect(staySpot(day('2030-05-01', { city: '札幌' }))).toBeNull()
+    expect(staySpot(undefined)).toBeNull()
+  })
+})
+
+describe('overviewOf', () => {
+  const items = [
+    item({ id: 'b', day: '2030-05-02', start_time: '10:00', title: '二日早', lat: 5, lng: 5 }),
+    item({ id: 'a2', day: '2030-05-01', start_time: '15:00', title: '一日晚', lat: 2, lng: 2 }),
+    item({ id: 'a1', day: '2030-05-01', start_time: '09:00', title: '一日早', lat: 1, lng: 1 }),
+    item({ id: 'x', day: '2030-05-03', title: '沒定位' }),
+  ]
+  const days = [
+    day('2030-05-02', { stay: 'A', lat: 9, lng: 9 }),
+    day('2030-05-01', { stay: 'A', lat: 9, lng: 9 }),
+    day('2030-05-03', { stay: 'B', lat: 8, lng: 8 }),
+    day('2030-05-04', { stay: '沒定位' }),
+  ]
+  it('依日期分組，每天各自依時間編號，沒有定位地點的日子不列', () => {
+    expect(overviewOf(items, days).groups).toEqual([
+      {
+        date: '2030-05-01',
+        stops: [
+          { id: 'a1', n: 1, title: '一日早', lat: 1, lng: 1 },
+          { id: 'a2', n: 2, title: '一日晚', lat: 2, lng: 2 },
+        ],
+      },
+      { date: '2030-05-02', stops: [{ id: 'b', n: 1, title: '二日早', lat: 5, lng: 5 }] },
+    ])
+  })
+  it('連住同一間的住宿合成一個，記下住了哪幾晚', () => {
+    expect(overviewOf(items, days).stays).toEqual([
+      { title: 'A', lat: 9, lng: 9, dates: ['2030-05-01', '2030-05-02'] },
+      { title: 'B', lat: 8, lng: 8, dates: ['2030-05-03'] },
+    ])
   })
 })

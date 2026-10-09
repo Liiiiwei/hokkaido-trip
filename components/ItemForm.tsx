@@ -1,14 +1,14 @@
 'use client'
 
+import { Check, LoaderCircle, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { messageOf } from '@/lib/errors'
-import { searchPlaces, type PlaceResult } from '@/lib/geocode'
 import { dayLabel } from '@/lib/schedule'
 import { newId } from '@/lib/id'
 import { changedFields, type Change } from '@/lib/state'
 import { createItem, deleteItem, updateItem } from '@/lib/store'
 import type { Item, ItemInput, ItemKind } from '@/lib/types'
 import { useAction } from '@/lib/useAction'
+import { PlacePicker, type Picked } from './PlacePicker'
 import { Field, Sheet, ghostClass, inputClass, primaryClass } from './ui'
 
 export function ItemForm({
@@ -35,14 +35,11 @@ export function ItemForm({
   const [note, setNote] = useState(item?.note ?? '')
   const [arrive, setArrive] = useState(item?.arrive_place ?? '')
   // 定位：座標加上給人看的說明
-  const [pin, setPin] = useState<{ lat: number; lng: number; label: string } | null>(
+  const [pin, setPin] = useState<Picked | null>(
     typeof item?.lat === 'number' && typeof item?.lng === 'number'
       ? { lat: item.lat, lng: item.lng, label: '' }
       : null,
   )
-  const [found, setFound] = useState<PlaceResult[] | null>(null)
-  const [searching, setSearching] = useState(false)
-  const [searchError, setSearchError] = useState('')
   const [confirming, setConfirming] = useState(false)
   // 新行程的代號在表單開啟時就定下來，重試儲存也是同一筆
   const [freshId] = useState(newId)
@@ -78,22 +75,6 @@ export function ItemForm({
   function onPlaceChange(value: string) {
     setPlace(value)
     setPin(null)
-    setFound(null)
-    setSearchError('')
-  }
-
-  async function onSearch() {
-    if (searching) return
-    setSearching(true)
-    setSearchError('')
-    setFound(null)
-    try {
-      setFound(await searchPlaces(place))
-    } catch (error) {
-      setSearchError(messageOf(error))
-    } finally {
-      setSearching(false)
-    }
   }
 
   function onDelete() {
@@ -187,65 +168,7 @@ export function ItemForm({
             maxLength={80}
           />
         </Field>
-        <div className="space-y-2">
-          {pin ? (
-            <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 text-sm text-zinc-700">
-                <span className="font-semibold text-blue-700">已定位</span>
-                {pin.label && <span className="ml-1 break-words text-zinc-500">{pin.label}</span>}
-              </p>
-              <button
-                type="button"
-                className={`${ghostClass} shrink-0`}
-                disabled={busy}
-                onClick={() => setPin(null)}
-              >
-                取消定位
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className={`${ghostClass} w-full`}
-              disabled={busy || searching || !place.trim()}
-              onClick={onSearch}
-            >
-              {searching ? '搜尋中…' : '找地點'}
-            </button>
-          )}
-          {!pin && !found && !searchError && (
-            <p className="text-xs text-zinc-500">定位後會出現在當天地圖上；不定位也能儲存。</p>
-          )}
-          {searchError && (
-            <p role="alert" className="text-sm text-red-700">
-              {searchError}
-            </p>
-          )}
-          {!pin && found && found.length === 0 && (
-            <p className="text-sm text-zinc-600">
-              找不到這個地點，換成日文或英文名稱再找一次。
-            </p>
-          )}
-          {!pin && found && found.length > 0 && (
-            <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-300">
-              {found.map((r) => (
-                <li key={`${r.lat},${r.lng},${r.address}`}>
-                  <button
-                    type="button"
-                    className="block min-h-11 w-full px-3 py-2 text-left"
-                    onClick={() => {
-                      setPin({ lat: r.lat, lng: r.lng, label: r.address })
-                      setFound(null)
-                    }}
-                  >
-                    <span className="block text-sm font-semibold">{r.name}</span>
-                    <span className="block break-words text-xs text-zinc-500">{r.address}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <PlacePicker key={place} query={place} pin={pin} onPin={setPin} disabled={busy} />
         <Field label="抵達機場／車站">
           <input
             className={inputClass}
@@ -268,6 +191,7 @@ export function ItemForm({
         </Field>
 
         <button type="submit" className={primaryClass} disabled={busy || !title.trim()}>
+          {save.pending ? <LoaderCircle size={18} className="animate-spin" /> : <Check size={18} />}
           {save.pending ? '儲存中…' : '儲存'}
         </button>
         {save.error && (
@@ -279,6 +203,7 @@ export function ItemForm({
         {item && (
           <>
             <button type="button" className={`${ghostClass} w-full`} disabled={busy} onClick={onDelete}>
+              <Trash2 size={16} />
               {remove.pending ? '刪除中…' : confirming ? '確定刪除' : '刪除'}
             </button>
             {confirming && !remove.pending && (

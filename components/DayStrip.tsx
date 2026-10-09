@@ -35,10 +35,10 @@ export function DayStrip({
             type="button"
             aria-pressed={active}
             onClick={() => onSelect(date)}
-            className={`min-w-16 shrink-0 rounded-xl border px-3 py-2 text-center ${
+            className={`min-w-16 shrink-0 rounded-xl border px-3 py-2 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${
               active
                 ? 'border-blue-700 bg-blue-700 text-white'
-                : 'border-zinc-200 bg-white text-zinc-900'
+                : 'border-zinc-200 bg-white text-zinc-900 active:bg-zinc-100'
             }`}
           >
             <div className="text-sm font-semibold tabular-nums">{md}</div>

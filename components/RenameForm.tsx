@@ -1,5 +1,6 @@
 'use client'
 
+import { Check, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import { normalizeName, saveName } from '@/lib/identity'
 import { renameMember } from '@/lib/store'
@@ -49,6 +50,7 @@ export function RenameForm({
         </Field>
         <p className="text-sm text-zinc-600">你已加入的行程會一起換成新名字。</p>
         <button type="submit" className={primaryClass} disabled={!name || pending}>
+          {pending ? <LoaderCircle size={18} className="animate-spin" /> : <Check size={18} />}
           {pending ? '儲存中…' : '儲存'}
         </button>
         {error && (

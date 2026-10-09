@@ -138,3 +138,41 @@ test('航班填了抵達機場，下一站的怎麼去從抵達機場出發', as
   const route = await card.getByRole('link', { name: /怎麼去/ }).getAttribute('href')
   expect(new URL(route!).searchParams.get('origin')).toBe('新千歲機場')
 })
+
+test('住宿定位後，當天地圖與全程地圖都有住宿圖釘', async ({ page }) => {
+  await mockGitHub(page)
+  await mockMaps(page, [
+    { name: '測試飯店', display_name: '測試飯店, 札幌市, 北海道, 日本', lat: '43.055', lon: '141.353' },
+  ])
+  await page.goto('/#k=fake_key')
+  await page.getByPlaceholder('你的名字或暱稱').fill('測試')
+  await page.getByRole('button', { name: '進入行程' }).click()
+
+  await page.getByRole('button', { name: /的住宿與備註/ }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('住宿名稱').fill('測試飯店')
+  await dialog.getByRole('button', { name: '找地點' }).click()
+  await dialog.getByRole('button', { name: /札幌市/ }).click()
+  await expect(dialog.getByText('已定位')).toBeVisible()
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  await expect(dialog).toHaveCount(0)
+
+  await expect(page.getByRole('button', { name: /的住宿與備註/ })).toContainText('測試飯店')
+  await page.getByRole('button', { name: /當天地圖/ }).click()
+  await expect(page.locator('.stay-pin')).toHaveCount(1)
+  await page.getByRole('button', { name: /當天地圖/ }).click()
+
+  await page.getByRole('button', { name: '全程地圖' }).click()
+  const overview = page.getByRole('dialog', { name: '全程地圖' })
+  await expect(overview.locator('.stay-pin')).toHaveCount(1)
+  await expect(overview.getByRole('button', { name: '全部', exact: true })).toBeVisible()
+})
+
+test('全程地圖還沒有定位過的地點時顯示說明', async ({ page }) => {
+  await mockGitHub(page)
+  await page.goto('/#k=fake_key')
+  await page.getByPlaceholder('你的名字或暱稱').fill('測試')
+  await page.getByRole('button', { name: '進入行程' }).click()
+  await page.getByRole('button', { name: '全程地圖' }).click()
+  await expect(page.getByRole('dialog', { name: '全程地圖' }).getByText('還沒有定位過的地點')).toBeVisible()
+})

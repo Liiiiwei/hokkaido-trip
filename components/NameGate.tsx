@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowRight } from 'lucide-react'
 import { useState } from 'react'
 import { normalizeName, saveName } from '@/lib/identity'
 import { inputClass, primaryClass } from './ui'
@@ -31,6 +32,7 @@ export function NameGate({ onDone }: { onDone: (name: string) => void }) {
         />
         <button type="submit" className={primaryClass} disabled={!name}>
           進入行程
+          <ArrowRight size={18} />
         </button>
       </form>
     </main>

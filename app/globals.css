@@ -24,3 +24,37 @@ body {
   font-weight: 600;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
 }
+
+/* 住宿圖釘：方形加房子圖示，和圓形的行程圖釘用形狀區分 */
+.stay-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  background: #18181b;
+  color: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
+}
+.day-pin span,
+.stay-pin span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 面板從下方滑入；系統設定減少動態時不動 */
+@keyframes sheet-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+.sheet-in {
+  animation: sheet-in 160ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-in {
+    animation: none;
+  }
+}

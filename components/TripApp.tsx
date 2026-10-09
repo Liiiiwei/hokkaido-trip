@@ -1,5 +1,6 @@
 'use client'
 
+import { Plus, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import {
   adoptKeyFromUrl,
@@ -9,7 +10,7 @@ import {
   parseKey,
   saveOnlyMine,
 } from '@/lib/identity'
-import { defaultDate, listDates, localToday } from '@/lib/schedule'
+import { defaultDate, filterMine, listDates, localToday } from '@/lib/schedule'
 import { setKey } from '@/lib/store'
 import type { Item } from '@/lib/types'
 import { useTrip } from '@/lib/useTrip'
@@ -21,6 +22,7 @@ import { ItemForm } from './ItemForm'
 import { NameGate } from './NameGate'
 import { RenameForm } from './RenameForm'
 import { TripForm } from './TripForm'
+import { TripMap } from './TripMap'
 import { ghostClass, primaryClass } from './ui'
 
 export type SheetState =
@@ -29,6 +31,7 @@ export type SheetState =
   | { type: 'trip' }
   | { type: 'day' }
   | { type: 'rename' }
+  | { type: 'map' }
 
 function LoadingSkeleton() {
   return (
@@ -49,6 +52,7 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
       </p>
       <p className="mt-1 text-sm text-zinc-600">請確認網路後再試一次。</p>
       <button type="button" onClick={onRetry} className={`${ghostClass} mt-4`}>
+        <RefreshCw size={16} />
         重試
       </button>
     </main>
@@ -142,6 +146,7 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
           trip={data.trip}
           me={me}
           onEditTrip={() => setSheet({ type: 'trip' })}
+          onOpenMap={() => setSheet({ type: 'map' })}
           onRename={() => setSheet({ type: 'rename' })}
         />
         <DayStrip dates={dates} days={data.days} current={current} onSelect={setSelected} />
@@ -169,6 +174,7 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
             className={primaryClass}
             onClick={() => setSheet({ type: 'item', item: null })}
           >
+            <Plus size={20} />
             新增行程
           </button>
         </div>
@@ -198,6 +204,17 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
           key={current}
           day={data.days.find((d) => d.date === current) ?? { date: current, city: '', note: '' }}
           apply={apply}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {sheet?.type === 'map' && (
+        <TripMap
+          items={onlyMine ? filterMine(data.items, data.itemMembers, me) : data.items}
+          days={data.days}
+          onPickDay={(date) => {
+            setSelected(date)
+            setSheet(null)
+          }}
           onClose={() => setSheet(null)}
         />
       )}

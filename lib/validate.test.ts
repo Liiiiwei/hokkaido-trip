@@ -112,3 +112,22 @@ describe('parseTripData 保留不認得的欄位', () => {
     expect(out.budget).toBe(1)
   })
 })
+
+describe('parseTripData 的住宿', () => {
+  const parse = (extra: object) =>
+    parseTripData({ trip, days: [{ date: '2030-05-01', ...extra }], items: [] }).days[0]
+  it('保留住宿名稱與合理的座標', () => {
+    expect(parse({ stay: 'A 飯店', lat: 43.05, lng: 141.35 })).toEqual({
+      date: '2030-05-01',
+      city: '',
+      note: '',
+      stay: 'A 飯店',
+      lat: 43.05,
+      lng: 141.35,
+    })
+  })
+  it('空的名稱與壞掉的座標當成沒有', () => {
+    expect(parse({ stay: '', lat: 999, lng: 1 })).toEqual({ date: '2030-05-01', city: '', note: '' })
+    expect(parse({ stay: 5, lat: null, lng: null })).toEqual({ date: '2030-05-01', city: '', note: '' })
+  })
+})

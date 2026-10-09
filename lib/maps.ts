@@ -1,5 +1,5 @@
 import { sortItems } from './schedule'
-import type { Item } from './types'
+import type { Day, Item } from './types'
 
 type Spot = Pick<Item, 'place' | 'lat' | 'lng' | 'arrive_place'>
 
@@ -53,4 +53,63 @@ export function previousStop(mine: Item[], item: Item): Item | null {
     if (hasSpot(ordered[k]) || ordered[k].arrive_place) return ordered[k]
   }
   return null
+}
+
+export type StayPin = { title: string; lat: number; lng: number }
+
+// 路線起點用的住宿：要有名稱或座標才找得到路，只填城市不夠
+export type StaySpot = { title: string; place: string; lat?: number; lng?: number }
+
+const stayTitle = (day: Day): string => day.stay || day.city || '住宿'
+
+export function staySpot(day: Day | undefined): StaySpot | null {
+  if (!day) return null
+  const c = coordsOf({ place: '', lat: day.lat, lng: day.lng })
+  if (!day.stay && !c) return null
+  return { title: stayTitle(day), place: day.stay ?? '', ...c }
+}
+
+function stayPin(day: Day | undefined): StayPin | null {
+  if (!day) return null
+  const c = coordsOf({ place: '', lat: day.lat, lng: day.lng })
+  return c ? { title: stayTitle(day), ...c } : null
+}
+
+// 前一天的日期；用 UTC 算才不會被時區或日光節約時間影響
+export function prevDate(date: string): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+}
+
+const samePlace = (a: StayPin, b: StayPin) => a.lat === b.lat && a.lng === b.lng
+
+// 當天地圖上的住宿：早上出發的那間（前一晚）和當晚住的那間，同一間只放一個
+export function stayPinsOf(days: Day[], date: string): StayPin[] {
+  const find = (d: string) => stayPin(days.find((x) => x.date === d))
+  const out: StayPin[] = []
+  for (const pin of [find(prevDate(date)), find(date)]) {
+    if (pin && !out.some((p) => samePlace(p, pin))) out.push(pin)
+  }
+  return out
+}
+
+export type Overview = {
+  groups: { date: string; stops: Pin[] }[]
+  stays: (StayPin & { dates: string[] })[]
+}
+
+// 全程地圖：行程依日期分組、每天各自編號；連住同一間的住宿合成一個
+export function overviewOf(items: Item[], days: Day[]): Overview {
+  const dates = [...new Set(items.map((i) => i.day))].sort()
+  const groups = dates
+    .map((date) => ({ date, stops: pinsOf(items.filter((i) => i.day === date)) }))
+    .filter((g) => g.stops.length > 0)
+  const stays: Overview['stays'] = []
+  for (const day of [...days].sort((a, b) => a.date.localeCompare(b.date))) {
+    const pin = stayPin(day)
+    if (!pin) continue
+    const same = stays.find((s) => samePlace(s, pin))
+    if (same) same.dates.push(day.date)
+    else stays.push({ ...pin, dates: [day.date] })
+  }
+  return { groups, stays }
 }

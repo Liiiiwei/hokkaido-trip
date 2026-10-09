@@ -38,12 +38,17 @@ export function parseTripData(value: unknown): TripData {
   if (!isRecord(value) || !isRecord(value.trip) || !Array.isArray(value.items)) {
     throw new StoreError('bad_data')
   }
-  const days: Day[] = records(value.days).map((d) => ({
-    ...d,
-    date: required(d.date),
-    city: text(d.city),
-    note: text(d.note),
-  }))
+  const days: Day[] = records(value.days).map((d) => {
+    const { lat, lng, stay, ...rest } = d
+    return {
+      ...rest,
+      date: required(d.date),
+      city: text(d.city),
+      note: text(d.note),
+      ...(typeof stay === 'string' && stay !== '' ? { stay } : {}),
+      ...coords(lat, lng),
+    }
+  })
   const items: Item[] = records(value.items).map((i) => {
     if (i.kind !== 'all' && i.kind !== 'split') throw new StoreError('bad_data')
     // 這三個選填欄位壞掉時要整個拿掉，所以先從原資料抽出來

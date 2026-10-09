@@ -1,14 +1,23 @@
 'use client'
 
+import {
+  LoaderCircle,
+  MapPin,
+  Navigation,
+  Pencil,
+  PlaneLanding,
+  UserMinus,
+  UserPlus,
+} from 'lucide-react'
+import { googlePlaceUrl, googleTransitUrl, hasSpot, type StaySpot } from '@/lib/maps'
 import type { Change } from '@/lib/state'
-import { googlePlaceUrl, googleTransitUrl, hasSpot } from '@/lib/maps'
 import { joinItem, leaveItem } from '@/lib/store'
 import type { Item } from '@/lib/types'
 import { useAction } from '@/lib/useAction'
 import { ghostClass } from './ui'
 
 const linkClass =
-  'flex h-11 items-center justify-center rounded-lg border border-zinc-300 bg-white text-sm text-zinc-700'
+  'inline-flex h-11 items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-700 transition-colors active:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700'
 
 export function ItemCard({
   item,
@@ -24,8 +33,8 @@ export function ItemCard({
   me: string
   // 在當天地圖上的編號；沒定位就沒有
   pinNo?: number
-  // 我的上一站，「怎麼去」的起點
-  from: Item | null
+  // 「怎麼去」的起點：我的上一站，當天第一站則是早上出發的住宿
+  from: Item | StaySpot | null
   onEdit: (item: Item) => void
   apply: (change: Change) => void
 }) {
@@ -55,15 +64,22 @@ export function ItemCard({
   }
 
   return (
-    <article data-testid="item-card" className="rounded-xl border border-zinc-200 bg-white">
+    <article
+      data-testid="item-card"
+      className="overflow-hidden rounded-xl border border-zinc-200 bg-white"
+    >
       <button
         type="button"
         aria-label={`編輯 ${item.title}`}
         onClick={() => onEdit(item)}
-        className="block w-full p-3 text-left"
+        className="block w-full p-3 text-left transition-colors active:bg-zinc-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-700"
       >
-        <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <span className="tabular-nums">{time}</span>
+        <span className="flex items-center gap-2 text-xs text-zinc-500">
+          <span
+            className={`text-sm tabular-nums ${item.start_time ? 'font-semibold text-zinc-900' : ''}`}
+          >
+            {time}
+          </span>
           {item.kind === 'all' && (
             <span className="rounded border border-zinc-300 px-1.5">全員</span>
           )}
@@ -75,14 +91,25 @@ export function ItemCard({
               {pinNo}
             </span>
           )}
-        </div>
-        <div className="mt-1 text-base font-semibold">{item.title}</div>
-        {item.place && <div className="mt-0.5 text-sm text-zinc-600">{item.place}</div>}
+          <Pencil size={14} className="ml-auto shrink-0 text-zinc-400" />
+        </span>
+        <span className="mt-1 block text-base font-semibold">{item.title}</span>
+        {item.place && (
+          <span className="mt-1 flex items-start gap-1.5 text-sm text-zinc-600">
+            <MapPin size={14} className="mt-[3px] shrink-0 text-zinc-400" />
+            <span className="min-w-0 break-words">{item.place}</span>
+          </span>
+        )}
         {item.arrive_place && (
-          <div className="mt-0.5 text-sm text-zinc-600">抵達：{item.arrive_place}</div>
+          <span className="mt-1 flex items-start gap-1.5 text-sm text-zinc-600">
+            <PlaneLanding size={14} className="mt-[3px] shrink-0 text-zinc-400" />
+            <span className="min-w-0 break-words">抵達：{item.arrive_place}</span>
+          </span>
         )}
         {item.note && (
-          <div className="mt-1 whitespace-pre-wrap text-sm text-zinc-500">{item.note}</div>
+          <span className="mt-1.5 block whitespace-pre-wrap break-words text-sm text-zinc-500">
+            {item.note}
+          </span>
         )}
       </button>
 
@@ -94,6 +121,7 @@ export function ItemCard({
             rel="noopener noreferrer"
             className={linkClass}
           >
+            <MapPin size={16} />
             地圖
           </a>
           <a
@@ -103,6 +131,7 @@ export function ItemCard({
             aria-label={`怎麼去：${from ? `從「${from.title}」出發` : '從目前位置出發'}`}
             className={linkClass}
           >
+            <Navigation size={16} />
             怎麼去
           </a>
         </div>
@@ -127,6 +156,13 @@ export function ItemCard({
             )}
           </div>
           <button type="button" disabled={pending} onClick={toggle} className={`${ghostClass} shrink-0`}>
+            {pending ? (
+              <LoaderCircle size={16} className="animate-spin" />
+            ) : joined ? (
+              <UserMinus size={16} />
+            ) : (
+              <UserPlus size={16} />
+            )}
             {pending ? '處理中…' : joined ? '退出' : '加入'}
           </button>
         </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { Check, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import { datesLosingItems, dayParts, listDates } from '@/lib/schedule'
 import type { Change } from '@/lib/state'
@@ -88,6 +89,7 @@ export function TripForm({
           className={primaryClass}
           disabled={pending || !!blocked || !title.trim()}
         >
+          {pending ? <LoaderCircle size={18} className="animate-spin" /> : <Check size={18} />}
           {pending ? '儲存中…' : '儲存'}
         </button>
         {error && (
