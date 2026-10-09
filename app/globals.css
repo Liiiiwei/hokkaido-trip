@@ -1,11 +1,19 @@
 @import "tailwindcss";
 
+/* 時刻表風格：冷白底、墨黑字、單一鈷藍強調色；數字用等寬字體 */
+@theme {
+  --color-accent: #1d3cf0;
+  --color-accent-deep: #162fc0;
+  --color-paper: #f4f5f7;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: #fafafa;
+  background: var(--color-paper);
   color: #18181b;
   font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC",
     "Microsoft JhengHei", sans-serif;
@@ -18,9 +26,10 @@ body {
   justify-content: center;
   border-radius: 9999px;
   border: 2px solid #fff;
-  background: #1d4ed8;
+  background: #1d3cf0;
   color: #fff;
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 12px;
   font-weight: 600;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
 }
@@ -55,6 +64,22 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .sheet-in {
+    animation: none;
+  }
+}
+
+/* 換一天時，時間軸一列一列浮上來 */
+@keyframes rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+.rise {
+  animation: rise 240ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise {
     animation: none;
   }
 }

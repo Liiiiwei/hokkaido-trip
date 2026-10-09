@@ -52,7 +52,7 @@ export function MapView({
         }).addTo(map)
         for (const line of content.lines) {
           if (line.length > 1) {
-            L.polyline(line, { color: '#1d4ed8', weight: 3, opacity: 0.7 }).addTo(map)
+            L.polyline(line, { color: '#1d3cf0', weight: 3, opacity: 0.7 }).addTo(map)
           }
         }
         for (const m of content.markers) {
@@ -132,7 +132,7 @@ export function MapLegend({ stopLabel }: { stopLabel: string }) {
   return (
     <p className="mt-1.5 flex items-center gap-4 text-xs text-zinc-500">
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-3 w-3 rounded-full bg-blue-700" />
+        <span className="inline-block h-3 w-3 rounded-full bg-accent" />
         {stopLabel}
       </span>
       <span className="inline-flex items-center gap-1.5">

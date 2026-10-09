@@ -14,11 +14,13 @@ import type { Change } from '@/lib/state'
 import { joinItem, leaveItem } from '@/lib/store'
 import type { Item } from '@/lib/types'
 import { useAction } from '@/lib/useAction'
+import { RichText } from './RichText'
 import { ghostClass } from './ui'
 
 const linkClass =
-  'inline-flex h-11 items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-700 transition-colors active:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700'
+  'inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-800 transition-colors active:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
+// 行程卡片。時間顯示在左邊的時間軸上，卡片本身只放內容與動作
 export function ItemCard({
   item,
   members,
@@ -40,11 +42,6 @@ export function ItemCard({
 }) {
   const { pending, error, run } = useAction()
   const joined = members.includes(me)
-  const time = item.start_time
-    ? item.end_time
-      ? `${item.start_time}–${item.end_time}`
-      : item.start_time
-    : '時間未定'
 
   function toggle() {
     void run(async () => {
@@ -68,53 +65,45 @@ export function ItemCard({
       data-testid="item-card"
       className="overflow-hidden rounded-xl border border-zinc-200 bg-white"
     >
-      <button
-        type="button"
-        aria-label={`編輯 ${item.title}`}
-        onClick={() => onEdit(item)}
-        className="block w-full p-3 text-left transition-colors active:bg-zinc-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-700"
-      >
-        <span className="flex items-center gap-2 text-xs text-zinc-500">
-          <span
-            className={`text-sm tabular-nums ${item.start_time ? 'font-semibold text-zinc-900' : ''}`}
-          >
-            {time}
-          </span>
-          {item.kind === 'all' && (
-            <span className="rounded border border-zinc-300 px-1.5">全員</span>
+      <div className="flex items-start gap-1 py-2.5 pl-3 pr-1">
+        <div className="min-w-0 flex-1 py-0.5">
+          <h3 className="flex items-center gap-2 text-base font-semibold leading-snug">
+            <span className="min-w-0 break-words">{item.title}</span>
+            {pinNo !== undefined && (
+              <span
+                aria-label={`地圖上的 ${pinNo} 號`}
+                className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-accent px-1 font-mono text-xs font-semibold text-white"
+              >
+                {pinNo}
+              </span>
+            )}
+          </h3>
+          {item.place && (
+            <p className="mt-1 flex items-start gap-1.5 text-sm text-zinc-600">
+              <MapPin size={14} className="mt-[3px] shrink-0 text-zinc-400" />
+              <span className="min-w-0 break-words">{item.place}</span>
+            </p>
           )}
-          {pinNo !== undefined && (
-            <span
-              aria-label={`地圖上的 ${pinNo} 號`}
-              className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-700 px-1 font-semibold text-white"
-            >
-              {pinNo}
-            </span>
+          {item.arrive_place && (
+            <p className="mt-1 flex items-start gap-1.5 text-sm text-zinc-600">
+              <PlaneLanding size={14} className="mt-[3px] shrink-0 text-zinc-400" />
+              <span className="min-w-0 break-words">抵達：{item.arrive_place}</span>
+            </p>
           )}
-          <Pencil size={14} className="ml-auto shrink-0 text-zinc-400" />
-        </span>
-        <span className="mt-1 block text-base font-semibold">{item.title}</span>
-        {item.place && (
-          <span className="mt-1 flex items-start gap-1.5 text-sm text-zinc-600">
-            <MapPin size={14} className="mt-[3px] shrink-0 text-zinc-400" />
-            <span className="min-w-0 break-words">{item.place}</span>
-          </span>
-        )}
-        {item.arrive_place && (
-          <span className="mt-1 flex items-start gap-1.5 text-sm text-zinc-600">
-            <PlaneLanding size={14} className="mt-[3px] shrink-0 text-zinc-400" />
-            <span className="min-w-0 break-words">抵達：{item.arrive_place}</span>
-          </span>
-        )}
-        {item.note && (
-          <span className="mt-1.5 block whitespace-pre-wrap break-words text-sm text-zinc-500">
-            {item.note}
-          </span>
-        )}
-      </button>
+          {item.note && <RichText text={item.note} className="mt-1.5 text-sm text-zinc-500" />}
+        </div>
+        <button
+          type="button"
+          aria-label={`編輯 ${item.title}`}
+          onClick={() => onEdit(item)}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors active:bg-zinc-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+        >
+          <Pencil size={16} />
+        </button>
+      </div>
 
       {hasSpot(item) && (
-        <div className="grid grid-cols-2 gap-2 border-t border-zinc-100 p-3">
+        <div className="grid grid-cols-2 gap-2 px-3 pb-3">
           <a
             href={googlePlaceUrl(item)}
             target="_blank"
@@ -138,16 +127,18 @@ export function ItemCard({
       )}
 
       {item.kind === 'split' && (
-        <div className="flex items-center justify-between gap-3 border-t border-zinc-100 p-3">
+        <div className="flex items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50 px-3 py-2">
           <div className="flex flex-wrap gap-1.5 text-sm">
             {members.length === 0 ? (
-              <span className="text-zinc-400">還沒有人加入</span>
+              <span className="text-zinc-500">還沒有人加入</span>
             ) : (
               members.map((name) => (
                 <span
                   key={name}
                   className={`rounded-full px-2 py-0.5 ${
-                    name === me ? 'bg-blue-700 text-white' : 'bg-zinc-100 text-zinc-700'
+                    name === me
+                      ? 'bg-accent font-semibold text-white'
+                      : 'border border-zinc-300 bg-white text-zinc-700'
                   }`}
                 >
                   {name}
@@ -155,7 +146,12 @@ export function ItemCard({
               ))
             )}
           </div>
-          <button type="button" disabled={pending} onClick={toggle} className={`${ghostClass} shrink-0`}>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={toggle}
+            className={`${ghostClass} h-10 shrink-0 ${joined ? '' : 'border-zinc-900 font-semibold text-zinc-900'}`}
+          >
             {pending ? (
               <LoaderCircle size={16} className="animate-spin" />
             ) : joined ? (
@@ -169,7 +165,7 @@ export function ItemCard({
       )}
 
       {error && (
-        <p role="alert" className="px-3 pb-3 text-sm text-red-700">
+        <p role="alert" className="px-3 pb-3 pt-2 text-sm text-red-700">
           {error}
         </p>
       )}

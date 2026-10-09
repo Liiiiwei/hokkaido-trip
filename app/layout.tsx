@@ -1,5 +1,14 @@
 import type { Metadata, Viewport } from 'next'
+import { IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
+
+// 時間、日期、編號用的等寬字體；中文沿用系統字體
+const mono = IBM_Plex_Mono({
+  weight: ['500', '600'],
+  subsets: ['latin'],
+  variable: '--font-plex-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: '北海道行程',
@@ -16,7 +25,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-Hant">
+    <html lang="zh-Hant" className={mono.variable}>
       <body>{children}</body>
     </html>
   )

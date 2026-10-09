@@ -3,6 +3,7 @@ import { StoreError } from './errors'
 import { commit, readFile, writeFile, type Io, type Snapshot } from './github'
 import { applyChange } from './state'
 import type { Day, Item, ItemInput, ItemMember, Trip, TripData } from './types'
+import { STALE_EVENT, versionStatus } from './version'
 
 let key = ''
 // 上次讀到的結果；下次讀的時候帶著它的 etag 去問，沒變就不佔額度
@@ -29,7 +30,14 @@ function enqueue<T>(job: () => Promise<T>): Promise<T> {
 }
 
 function mutate(change: (data: TripData) => TripData, message: string): Promise<TripData> {
-  return enqueue(() => commit(io, change, message))
+  return enqueue(async () => {
+    // 舊版程式存檔會把新版才有的欄位洗掉，所以線上有新版時先不存
+    if ((await versionStatus()).action === 'reload') {
+      window.dispatchEvent(new Event(STALE_EVENT))
+      throw new StoreError('stale')
+    }
+    return commit(io, change, message)
+  })
 }
 
 export function fetchAll(): Promise<TripData> {

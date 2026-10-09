@@ -116,13 +116,13 @@ export function ItemForm({
               <label
                 key={value}
                 className={`flex h-11 items-center justify-center gap-2 rounded-lg border text-sm ${
-                  kind === value ? 'border-blue-700 font-semibold text-blue-700' : 'border-zinc-300'
+                  kind === value ? 'border-accent font-semibold text-accent' : 'border-zinc-300'
                 }`}
               >
                 <input
                   type="radio"
                   name="kind"
-                  className="accent-blue-700"
+                  className="accent-accent"
                   checked={kind === value}
                   onChange={() => setKind(value)}
                 />

@@ -14,6 +14,7 @@ import { defaultDate, filterMine, listDates, localToday } from '@/lib/schedule'
 import { setKey } from '@/lib/store'
 import type { Item } from '@/lib/types'
 import { useTrip } from '@/lib/useTrip'
+import { useVersionWatch } from '@/lib/useVersionWatch'
 import { DayForm } from './DayForm'
 import { DayPanel } from './DayPanel'
 import { DayStrip } from './DayStrip'
@@ -114,6 +115,7 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
   // TripView 只在瀏覽器端讀完裝置資料後才出現，所以可以直接讀
   const [onlyMine, setOnlyMine] = useState(() => loadOnlyMine())
   const [sheet, setSheet] = useState<SheetState>(null)
+  useVersionWatch(sheet !== null)
 
   if (state.status === 'loading') return <LoadingSkeleton />
   if (state.status === 'error') return <ErrorScreen onRetry={retry} />
@@ -149,7 +151,7 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
           onOpenMap={() => setSheet({ type: 'map' })}
           onRename={() => setSheet({ type: 'rename' })}
         />
-        <DayStrip dates={dates} days={data.days} current={current} onSelect={setSelected} />
+        <DayStrip dates={dates} days={data.days} items={data.items} current={current} onSelect={setSelected} />
       </header>
 
       <DayPanel

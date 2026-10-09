@@ -49,3 +49,6 @@ docs/
 # Playwright 的輸出
 /test-results/
 /playwright-report/
+
+# 建置時產生的版本代號
+/public/version.json

@@ -8,6 +8,7 @@ export type ErrorCode =
   | 'read_only'
   | 'bad_data'
   | 'dates_in_use'
+  | 'stale'
 
 // 讀寫行程資料時的錯誤；message 就是代碼
 export class StoreError extends Error {
@@ -28,6 +29,7 @@ const MESSAGES: Record<string, string> = {
   busy: 'GitHub 暫時忙不過來，請過一分鐘再試',
   read_only: '這個連結只能看不能改，請跟主揪要新的連結',
   bad_data: '行程資料檔格式壞了，請跟主揪說',
+  stale: '網站剛更新。請先複製打好的內容，關閉面板後會自動換成新版，再存一次',
   dates_in_use: '有人剛在被排除的日子排了行程，請重新確認日期',
 }
 

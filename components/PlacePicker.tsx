@@ -44,9 +44,9 @@ export function PlacePicker({
     return (
       <div className="flex items-center justify-between gap-2">
         <p className="flex min-w-0 items-start gap-1.5 text-sm text-zinc-700">
-          <MapPinCheck size={16} className="mt-0.5 shrink-0 text-blue-700" />
+          <MapPinCheck size={16} className="mt-0.5 shrink-0 text-accent" />
           <span className="min-w-0">
-            <span className="font-semibold text-blue-700">已定位</span>
+            <span className="font-semibold text-accent">已定位</span>
             {pin.label && <span className="ml-1 break-words text-zinc-500">{pin.label}</span>}
           </span>
         </p>

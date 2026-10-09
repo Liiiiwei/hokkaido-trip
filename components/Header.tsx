@@ -5,7 +5,7 @@ import { dayLabel } from '@/lib/schedule'
 import type { Trip } from '@/lib/types'
 
 const ring =
-  'transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700'
+  'transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 export function Header({
   trip,
@@ -32,7 +32,7 @@ export function Header({
           <span className="truncate text-lg font-semibold">{trip.title}</span>
           <Pencil size={14} className="shrink-0 text-zinc-400" />
         </span>
-        <span className="block text-xs text-zinc-500">
+        <span className="block font-mono text-xs text-zinc-500">
           {dayLabel(trip.start_date)} – {dayLabel(trip.end_date)}
         </span>
       </button>

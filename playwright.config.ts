@@ -7,6 +7,9 @@ process.loadEnvFile('.env.local')
 const DATA_PATH = 'trip.e2e.json'
 process.env.NEXT_PUBLIC_DATA_PATH = DATA_PATH
 
+// 驗收時假裝這是某一版，才測得到「線上有新版」的情況
+const BUILD_ID = 'e2e-1'
+process.env.NEXT_PUBLIC_BUILD_ID = BUILD_ID
 const PORT = 3211
 
 export default defineConfig({
@@ -19,7 +22,7 @@ export default defineConfig({
   webServer: {
     command: `npx next dev --port ${PORT}`,
     url: `http://localhost:${PORT}`,
-    env: { NEXT_PUBLIC_DATA_PATH: DATA_PATH },
+    env: { NEXT_PUBLIC_DATA_PATH: DATA_PATH, NEXT_PUBLIC_BUILD_ID: BUILD_ID },
     // 一定要自己起一個帶著上面設定的伺服器，不能沿用平常開發用的那個
     reuseExistingServer: false,
   },

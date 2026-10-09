@@ -157,7 +157,7 @@ test('住宿定位後，當天地圖與全程地圖都有住宿圖釘', async ({
   await dialog.getByRole('button', { name: '儲存' }).click()
   await expect(dialog).toHaveCount(0)
 
-  await expect(page.getByRole('button', { name: /的住宿與備註/ })).toContainText('測試飯店')
+  await expect(page.getByTestId('stay-card')).toContainText('測試飯店')
   await page.getByRole('button', { name: /當天地圖/ }).click()
   await expect(page.locator('.stay-pin')).toHaveCount(1)
   await page.getByRole('button', { name: /當天地圖/ }).click()
@@ -175,4 +175,56 @@ test('全程地圖還沒有定位過的地點時顯示說明', async ({ page }) 
   await page.getByRole('button', { name: '進入行程' }).click()
   await page.getByRole('button', { name: '全程地圖' }).click()
   await expect(page.getByRole('dialog', { name: '全程地圖' }).getByText('還沒有定位過的地點')).toBeVisible()
+})
+
+// 假裝線上已經發佈了新版
+async function publishNewVersion(page: Page) {
+  await page.route('**/version.json*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'e2e-2' }) }),
+  )
+}
+
+test('線上有新版時，開面板的當下就自動換成新版', async ({ page }) => {
+  await mockGitHub(page)
+  await page.goto('/#k=fake_key')
+  await page.getByPlaceholder('你的名字或暱稱').fill('測試')
+  await page.getByRole('button', { name: '進入行程' }).click()
+  await expect(page.getByRole('button', { name: '新增行程', exact: true })).toBeVisible()
+  expect(page.url()).not.toContain('v=')
+
+  await publishNewVersion(page)
+  await page.getByRole('button', { name: '新增行程', exact: true }).click()
+  await expect(page).toHaveURL(/[?&]v=e2e-2/)
+  // 換過一次還是對不上就不再重來，網站照常可用
+  await expect(page.getByRole('button', { name: '新增行程', exact: true })).toBeVisible()
+  await page.waitForTimeout(1500)
+  await expect(page.getByRole('button', { name: '新增行程', exact: true })).toBeVisible()
+})
+
+test('內容打到一半才出新版：存檔被擋下、內容還在，關掉面板後才換成新版', async ({ page }) => {
+  await mockGitHub(page)
+  await enter(page)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('標題').fill('打到一半')
+  // 過了剛開面板的那一小段時間，才算「打到一半」
+  await page.waitForTimeout(2000)
+  await publishNewVersion(page)
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  await expect(dialog.getByRole('alert')).toContainText('網站剛更新')
+  await expect(dialog.getByLabel('標題')).toHaveValue('打到一半')
+  expect(page.url()).not.toContain('v=')
+
+  await dialog.getByRole('button', { name: '關閉' }).click()
+  await expect(page).toHaveURL(/[?&]v=e2e-2/)
+})
+
+test('備註裡的網址可以直接點', async ({ page }) => {
+  await mockGitHub(page)
+  await enter(page)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('標題').fill('訂位')
+  await dialog.getByLabel('備註').fill('訂位頁 https://www.example.com/book 記得先訂')
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  const link = page.getByTestId('item-card').filter({ hasText: '訂位' }).getByRole('link', { name: /example\.com/ })
+  await expect(link).toHaveAttribute('href', 'https://www.example.com/book')
 })
