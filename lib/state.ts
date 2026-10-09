@@ -67,13 +67,24 @@ export function applyChange(data: TripData, change: Change): TripData {
   return { ...data, itemMembers: [...rest.filter((m) => !sameMember(m, added)), added] }
 }
 
-const INPUT_KEYS = ['day', 'start_time', 'end_time', 'title', 'place', 'note', 'kind'] as const
+const INPUT_KEYS = [
+  'day',
+  'start_time',
+  'end_time',
+  'title',
+  'place',
+  'note',
+  'kind',
+  'lat',
+  'lng',
+] as const
 
 // 編輯表單送出時只留真的改過的欄位，才不會把別人同時改的其他欄位蓋回舊值
 export function changedFields(original: Item, input: ItemInput): Partial<ItemInput> {
   const patch: Partial<ItemInput> = {}
   for (const key of INPUT_KEYS) {
-    if (original[key] !== input[key]) Object.assign(patch, { [key]: input[key] })
+    // 座標沒填可能是 undefined 或 null，兩者都當成沒定位
+    if ((original[key] ?? null) !== (input[key] ?? null)) Object.assign(patch, { [key]: input[key] })
   }
   return patch
 }

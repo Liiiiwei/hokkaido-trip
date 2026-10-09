@@ -59,3 +59,18 @@ describe('parseTripData', () => {
     for (const value of bad) expect(() => parseTripData(value)).toThrow('bad_data')
   })
 })
+
+describe('parseTripData 的座標', () => {
+  const base = { id: 'i1', day: '2030-05-02', title: '溫泉', kind: 'all' }
+  const parse = (extra: object) => parseTripData({ trip, items: [{ ...base, ...extra }] }).items[0]
+  it('保留合理的座標', () => {
+    expect(parse({ lat: 43.06, lng: 141.35 })).toMatchObject({ lat: 43.06, lng: 141.35 })
+  })
+  it('座標不完整、不是數字或超出範圍時當成沒定位', () => {
+    for (const extra of [{ lat: 43.06 }, { lat: '43', lng: '141' }, { lat: 95, lng: 141 }, { lat: null, lng: null }]) {
+      const out = parse(extra)
+      expect(out.lat).toBeUndefined()
+      expect(out.lng).toBeUndefined()
+    }
+  })
+})

@@ -1,21 +1,31 @@
 'use client'
 
 import type { Change } from '@/lib/state'
+import { googlePlaceUrl, googleTransitUrl, hasSpot } from '@/lib/maps'
 import { joinItem, leaveItem } from '@/lib/store'
 import type { Item } from '@/lib/types'
 import { useAction } from '@/lib/useAction'
 import { ghostClass } from './ui'
 
+const linkClass =
+  'flex h-11 items-center justify-center rounded-lg border border-zinc-300 bg-white text-sm text-zinc-700'
+
 export function ItemCard({
   item,
   members,
   me,
+  pinNo,
+  from,
   onEdit,
   apply,
 }: {
   item: Item
   members: string[]
   me: string
+  // 在當天地圖上的編號；沒定位就沒有
+  pinNo?: number
+  // 我的上一站，「怎麼去」的起點
+  from: Item | null
   onEdit: (item: Item) => void
   apply: (change: Change) => void
 }) {
@@ -57,6 +67,14 @@ export function ItemCard({
           {item.kind === 'all' && (
             <span className="rounded border border-zinc-300 px-1.5">全員</span>
           )}
+          {pinNo !== undefined && (
+            <span
+              aria-label={`地圖上的 ${pinNo} 號`}
+              className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-700 px-1 font-semibold text-white"
+            >
+              {pinNo}
+            </span>
+          )}
         </div>
         <div className="mt-1 text-base font-semibold">{item.title}</div>
         {item.place && <div className="mt-0.5 text-sm text-zinc-600">{item.place}</div>}
@@ -64,6 +82,28 @@ export function ItemCard({
           <div className="mt-1 whitespace-pre-wrap text-sm text-zinc-500">{item.note}</div>
         )}
       </button>
+
+      {hasSpot(item) && (
+        <div className="grid grid-cols-2 gap-2 border-t border-zinc-100 p-3">
+          <a
+            href={googlePlaceUrl(item)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={linkClass}
+          >
+            地圖
+          </a>
+          <a
+            href={googleTransitUrl(from, item)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`怎麼去：${from ? `從「${from.title}」出發` : '從目前位置出發'}`}
+            className={linkClass}
+          >
+            怎麼去
+          </a>
+        </div>
+      )}
 
       {item.kind === 'split' && (
         <div className="flex items-center justify-between gap-3 border-t border-zinc-100 p-3">

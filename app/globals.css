@@ -10,3 +10,17 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC",
     "Microsoft JhengHei", sans-serif;
 }
+
+/* 當天地圖上的編號圖釘 */
+.day-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
+}

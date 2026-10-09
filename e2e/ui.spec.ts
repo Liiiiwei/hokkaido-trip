@@ -52,3 +52,66 @@ test('點面板外面不會關掉，打到一半的內容還在', async ({ page 
   await expect(page.getByRole('dialog')).toBeVisible()
   await expect(page.getByLabel('標題')).toHaveValue('打到一半')
 })
+
+// 地點搜尋與地圖圖磚也用假的回應，不打外部服務
+async function mockMaps(page: Page, results: unknown[]) {
+  await page.route('https://nominatim.openstreetmap.org/**', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: { 'access-control-allow-origin': '*' },
+      contentType: 'application/json',
+      body: JSON.stringify(results),
+    }),
+  )
+  await page.route('https://tile.openstreetmap.org/**', (route) => route.abort())
+}
+
+async function enter(page: Page) {
+  await page.goto('/#k=fake_key')
+  await page.getByPlaceholder('你的名字或暱稱').fill('測試')
+  await page.getByRole('button', { name: '進入行程' }).click()
+  await page.getByRole('button', { name: '新增行程', exact: true }).click()
+}
+
+test('找地點定位後，卡片有地圖與怎麼去，當天地圖出現圖釘', async ({ page }) => {
+  await mockGitHub(page)
+  await mockMaps(page, [
+    { name: '小樽運河', display_name: '小樽運河, 小樽市, 北海道, 日本', lat: '43.199', lon: '141.001' },
+  ])
+  await enter(page)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('標題').fill('運河散步')
+  await dialog.getByLabel('地點').fill('小樽運河')
+  await dialog.getByRole('button', { name: '找地點' }).click()
+  await dialog.getByRole('button', { name: /小樽市/ }).click()
+  await expect(dialog.getByText('已定位')).toBeVisible()
+  await dialog.getByRole('button', { name: '儲存' }).click()
+
+  const card = page.getByTestId('item-card').filter({ hasText: '運河散步' })
+  const place = await card.getByRole('link', { name: '地圖', exact: true }).getAttribute('href')
+  expect(place).toContain('https://www.google.com/maps/search/')
+  const route = await card.getByRole('link', { name: '怎麼去' }).getAttribute('href')
+  expect(new URL(route!).searchParams.get('travelmode')).toBe('transit')
+  expect(new URL(route!).searchParams.get('destination')).toBe('43.199,141.001')
+  expect(new URL(route!).searchParams.get('origin')).toBeNull()
+
+  await page.getByRole('button', { name: /當天地圖/ }).click()
+  await expect(page.locator('.leaflet-marker-icon')).toHaveCount(1)
+  await expect(page.locator('.leaflet-marker-icon')).toHaveText('1')
+})
+
+test('找不到地點時有提示，不定位也能儲存', async ({ page }) => {
+  await mockGitHub(page)
+  await mockMaps(page, [])
+  await enter(page)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('標題').fill('神祕小店')
+  await dialog.getByLabel('地點').fill('巷子裡的店')
+  await dialog.getByRole('button', { name: '找地點' }).click()
+  await expect(dialog.getByText('找不到這個地點')).toBeVisible()
+  await dialog.getByRole('button', { name: '儲存' }).click()
+
+  const card = page.getByTestId('item-card').filter({ hasText: '神祕小店' })
+  await expect(card.getByRole('link', { name: '怎麼去' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /當天地圖/ })).toHaveCount(0)
+})

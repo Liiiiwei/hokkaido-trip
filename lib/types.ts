@@ -13,6 +13,9 @@ export type Item = {
   place: string
   note: string
   kind: ItemKind
+  // 在地圖上定位過才有
+  lat?: number | null
+  lng?: number | null
   created_by: string
   updated_at: string
 }
@@ -22,7 +25,7 @@ export type ItemMember = { item_id: string; member_name: string }
 // 新增或編輯行程時送出的欄位
 export type ItemInput = Pick<
   Item,
-  'day' | 'start_time' | 'end_time' | 'title' | 'place' | 'note' | 'kind'
+  'day' | 'start_time' | 'end_time' | 'title' | 'place' | 'note' | 'kind' | 'lat' | 'lng'
 >
 
 export type TripData = {

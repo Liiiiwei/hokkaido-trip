@@ -150,3 +150,29 @@ describe('changedFields', () => {
     })
   })
 })
+
+describe('changedFields 的座標', () => {
+  const original = item('i1', '原標題')
+  const same = {
+    day: original.day,
+    start_time: original.start_time,
+    end_time: original.end_time,
+    title: original.title,
+    place: original.place,
+    note: original.note,
+    kind: original.kind,
+  }
+  it('定位或取消定位算是有改', () => {
+    expect(changedFields(original, { ...same, lat: 43.06, lng: 141.35 })).toEqual({
+      lat: 43.06,
+      lng: 141.35,
+    })
+    expect(changedFields({ ...original, lat: 1, lng: 2 }, { ...same, lat: null, lng: null })).toEqual({
+      lat: null,
+      lng: null,
+    })
+  })
+  it('本來就沒定位、表單送出 null，不算有改', () => {
+    expect(changedFields(original, { ...same, lat: null, lng: null })).toEqual({})
+  })
+})

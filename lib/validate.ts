@@ -13,6 +13,18 @@ function required(v: unknown): string {
 const text = (v: unknown): string => (typeof v === 'string' ? v : '')
 const time = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null)
 
+// 座標要兩個都是合理的數字才算定位過
+function coords(lat: unknown, lng: unknown): { lat?: number; lng?: number } {
+  const ok =
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180
+  return ok ? { lat, lng } : {}
+}
+
 function records(v: unknown): Rec[] {
   if (v === undefined) return []
   if (!Array.isArray(v) || !v.every(isRecord)) throw new StoreError('bad_data')
@@ -41,6 +53,7 @@ export function parseTripData(value: unknown): TripData {
       place: text(i.place),
       note: text(i.note),
       kind: i.kind,
+      ...coords(i.lat, i.lng),
       created_by: text(i.created_by),
       updated_at: text(i.updated_at),
     }

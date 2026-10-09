@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { messageOf } from '@/lib/errors'
+import { searchPlaces, type PlaceResult } from '@/lib/geocode'
 import { dayLabel } from '@/lib/schedule'
 import { newId } from '@/lib/id'
 import { changedFields, type Change } from '@/lib/state'
@@ -31,6 +33,15 @@ export function ItemForm({
   const [title, setTitle] = useState(item?.title ?? '')
   const [place, setPlace] = useState(item?.place ?? '')
   const [note, setNote] = useState(item?.note ?? '')
+  // 定位：座標加上給人看的說明
+  const [pin, setPin] = useState<{ lat: number; lng: number; label: string } | null>(
+    typeof item?.lat === 'number' && typeof item?.lng === 'number'
+      ? { lat: item.lat, lng: item.lng, label: '' }
+      : null,
+  )
+  const [found, setFound] = useState<PlaceResult[] | null>(null)
+  const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState('')
   const [confirming, setConfirming] = useState(false)
   // 新行程的代號在表單開啟時就定下來，重試儲存也是同一筆
   const [freshId] = useState(newId)
@@ -48,6 +59,8 @@ export function ItemForm({
       title: title.trim(),
       place: place.trim(),
       note: note.trim(),
+      lat: pin?.lat ?? null,
+      lng: pin?.lng ?? null,
     }
     if (!input.title) return
     void save.run(async () => {
@@ -57,6 +70,28 @@ export function ItemForm({
       apply({ table: 'items', eventType: item ? 'UPDATE' : 'INSERT', new: row, old: null })
       onClose()
     })
+  }
+
+  // 地點文字改了，原本的定位就不一定對，清掉讓人重找
+  function onPlaceChange(value: string) {
+    setPlace(value)
+    setPin(null)
+    setFound(null)
+    setSearchError('')
+  }
+
+  async function onSearch() {
+    if (searching) return
+    setSearching(true)
+    setSearchError('')
+    setFound(null)
+    try {
+      setFound(await searchPlaces(place))
+    } catch (error) {
+      setSearchError(messageOf(error))
+    } finally {
+      setSearching(false)
+    }
   }
 
   function onDelete() {
@@ -146,10 +181,69 @@ export function ItemForm({
           <input
             className={inputClass}
             value={place}
-            onChange={(e) => setPlace(e.target.value)}
+            onChange={(e) => onPlaceChange(e.target.value)}
             maxLength={80}
           />
         </Field>
+        <div className="space-y-2">
+          {pin ? (
+            <div className="flex items-center justify-between gap-2">
+              <p className="min-w-0 text-sm text-zinc-700">
+                <span className="font-semibold text-blue-700">已定位</span>
+                {pin.label && <span className="ml-1 break-words text-zinc-500">{pin.label}</span>}
+              </p>
+              <button
+                type="button"
+                className={`${ghostClass} shrink-0`}
+                disabled={busy}
+                onClick={() => setPin(null)}
+              >
+                取消定位
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className={`${ghostClass} w-full`}
+              disabled={busy || searching || !place.trim()}
+              onClick={onSearch}
+            >
+              {searching ? '搜尋中…' : '找地點'}
+            </button>
+          )}
+          {!pin && !found && !searchError && (
+            <p className="text-xs text-zinc-500">定位後會出現在當天地圖上；不定位也能儲存。</p>
+          )}
+          {searchError && (
+            <p role="alert" className="text-sm text-red-700">
+              {searchError}
+            </p>
+          )}
+          {!pin && found && found.length === 0 && (
+            <p className="text-sm text-zinc-600">
+              找不到這個地點，換成日文或英文名稱再找一次。
+            </p>
+          )}
+          {!pin && found && found.length > 0 && (
+            <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-300">
+              {found.map((r) => (
+                <li key={`${r.lat},${r.lng},${r.address}`}>
+                  <button
+                    type="button"
+                    className="block min-h-11 w-full px-3 py-2 text-left"
+                    onClick={() => {
+                      setPin({ lat: r.lat, lng: r.lng, label: r.address })
+                      setFound(null)
+                    }}
+                  >
+                    <span className="block text-sm font-semibold">{r.name}</span>
+                    <span className="block break-words text-xs text-zinc-500">{r.address}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <Field label="備註">
           <textarea
             className={`${inputClass} h-24 py-2`}
