@@ -1,7 +1,7 @@
 'use client'
 
 import { Plus, RefreshCw } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import {
   adoptKeyFromUrl,
   loadKey,
@@ -22,7 +22,7 @@ import { NameGate } from './NameGate'
 import { RenameForm } from './RenameForm'
 import { TripForm } from './TripForm'
 import { TripMap } from './TripMap'
-import { ghostClass, primaryClass } from './ui'
+import { SheetHost, ghostClass, primaryClass } from './ui'
 
 export type SheetState =
   | null
@@ -111,7 +111,16 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
   const { state, connected, apply, retry, reload } = useTrip()
   const [selected, setSelected] = useState<string | null>(null)
   const [sheet, setSheet] = useState<SheetState>(null)
+  // 面板收起時先播完離開的動作再拿掉
+  const [closing, setClosing] = useState(false)
+  // 換日的方向：往後一天是 1，往前是 -1，時間軸照這個方向進來
+  const [dir, setDir] = useState(0)
   useVersionWatch(sheet !== null)
+  const openSheet = (next: SheetState) => {
+    setClosing(false)
+    setSheet(next)
+  }
+  const closeSheet = () => setClosing(true)
 
   if (state.status === 'loading') return <LoadingSkeleton />
   if (state.status === 'error') return <ErrorScreen onRetry={retry} />
@@ -132,9 +141,14 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
   const current =
     selected && dates.includes(selected) ? selected : defaultDate(dates, localToday(new Date()))
 
+  const selectDay = (date: string) => {
+    setDir(Math.sign(dates.indexOf(date) - dates.indexOf(current)))
+    setSelected(date)
+  }
+
   return (
-    <main className="mx-auto min-h-dvh max-w-md">
-      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white">
+    <main className="mx-auto min-h-dvh max-w-md" style={{ '--day-dir': dir } as CSSProperties}>
+      <header className="chrome sticky top-0 z-10 border-b border-zinc-200/80">
         {!connected && (
           <div role="status" className="bg-zinc-900 px-4 py-2 text-center text-xs text-white">
             連線中斷，重新連線中…
@@ -143,29 +157,32 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
         <Header
           trip={data.trip}
           me={me}
-          onEditTrip={() => setSheet({ type: 'trip' })}
-          onOpenMap={() => setSheet({ type: 'map' })}
-          onRename={() => setSheet({ type: 'rename' })}
+          onEditTrip={() => openSheet({ type: 'trip' })}
+          onOpenMap={() => openSheet({ type: 'map' })}
+          onRename={() => openSheet({ type: 'rename' })}
         />
-        <DayStrip dates={dates} days={data.days} items={data.items} current={current} onSelect={setSelected} />
+        <DayStrip dates={dates} days={data.days} items={data.items} current={current} onSelect={selectDay} />
       </header>
 
       <DayPanel
         data={data}
         date={current}
         me={me}
-        onEditDay={() => setSheet({ type: 'day' })}
-        onEditItem={(item) => setSheet({ type: 'item', item })}
-        onAdd={() => setSheet({ type: 'item', item: null })}
+        onEditDay={() => openSheet({ type: 'day' })}
+        onEditItem={(item) => openSheet({ type: 'item', item })}
+        onAdd={() => openSheet({ type: 'item', item: null })}
         apply={apply}
       />
 
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white">
+      <div
+        data-testid="bottom-bar"
+        className="chrome fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200/80"
+      >
         <div className="mx-auto max-w-md p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             className={primaryClass}
-            onClick={() => setSheet({ type: 'item', item: null })}
+            onClick={() => openSheet({ type: 'item', item: null })}
           >
             <Plus size={20} />
             新增行程
@@ -173,54 +190,62 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
         </div>
       </div>
 
-      {sheet?.type === 'item' && (
-        <ItemForm
-          key={sheet.item?.id ?? 'new'}
-          item={sheet.item}
-          defaultDay={current}
-          dates={dates}
-          me={me}
-          apply={apply}
-          onClose={() => setSheet(null)}
-        />
-      )}
-      {sheet?.type === 'trip' && (
-        <TripForm
-          trip={data.trip}
-          items={data.items}
-          apply={apply}
-          onClose={() => setSheet(null)}
-        />
-      )}
-      {sheet?.type === 'day' && (
-        <DayForm
-          key={current}
-          day={data.days.find((d) => d.date === current) ?? { date: current, city: '', note: '' }}
-          apply={apply}
-          onClose={() => setSheet(null)}
-        />
-      )}
-      {sheet?.type === 'map' && (
-        <TripMap
-          items={data.items}
-          days={data.days}
-          onPickDay={(date) => {
-            setSelected(date)
-            setSheet(null)
-          }}
-          onClose={() => setSheet(null)}
-        />
-      )}
-      {sheet?.type === 'rename' && (
-        <RenameForm
-          me={me}
-          onRenamed={async (name) => {
-            onRename(name)
-            await reload()
-          }}
-          onClose={() => setSheet(null)}
-        />
-      )}
+      <SheetHost
+        closing={closing}
+        onExited={() => {
+          setSheet(null)
+          setClosing(false)
+        }}
+      >
+        {sheet?.type === 'item' && (
+          <ItemForm
+            key={sheet.item?.id ?? 'new'}
+            item={sheet.item}
+            defaultDay={current}
+            dates={dates}
+            me={me}
+            apply={apply}
+            onClose={closeSheet}
+          />
+        )}
+        {sheet?.type === 'trip' && (
+          <TripForm
+            trip={data.trip}
+            items={data.items}
+            apply={apply}
+            onClose={closeSheet}
+          />
+        )}
+        {sheet?.type === 'day' && (
+          <DayForm
+            key={current}
+            day={data.days.find((d) => d.date === current) ?? { date: current, city: '', note: '' }}
+            apply={apply}
+            onClose={closeSheet}
+          />
+        )}
+        {sheet?.type === 'map' && (
+          <TripMap
+            items={data.items}
+            days={data.days}
+            onPickDay={(date) => {
+              selectDay(date)
+              closeSheet()
+            }}
+            onClose={closeSheet}
+          />
+        )}
+        {sheet?.type === 'rename' && (
+          <RenameForm
+            me={me}
+            onRenamed={async (name) => {
+              onRename(name)
+              await reload()
+            }}
+            onClose={closeSheet}
+          />
+        )}
+      </SheetHost>
     </main>
   )
 }

@@ -333,3 +333,64 @@ test('從住宿到第一站、以及回住宿，都有開車時間的估計', as
   await expect(lobby).toBeVisible()
   await expect(lobby.getByText(/開車約|估算車程中/)).toHaveCount(0)
 })
+
+// 這台電腦的系統設定開了「減少動態」「減少透明度」，測試要明確指定才測得到動畫與半透明
+async function fullMotion(page: Page) {
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Emulation.setEmulatedMedia', {
+    features: [
+      { name: 'prefers-reduced-motion', value: 'no-preference' },
+      { name: 'prefers-reduced-transparency', value: 'no-preference' },
+    ],
+  })
+}
+
+// 從面板標題列往下拖
+async function dragSheetDown(page: Page, distance: number) {
+  // 等面板滑到定位再量位置，不然量到的是滑到一半的位置
+  await expect(page.getByRole('dialog')).toHaveAttribute('style', /translate3d\(0px, 0px, 0px\)/)
+  const header = page.getByRole('dialog').locator('[data-sheet-handle]')
+  const box = (await header.boundingBox())!
+  const x = box.x + 60
+  const y = box.y + box.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  for (let step = 1; step <= 10; step += 1) await page.mouse.move(x, y + (distance * step) / 10)
+  await page.mouse.up()
+}
+
+test('全程地圖面板往下拖可以收起；表單面板拖不掉，內容還在', async ({ page }) => {
+  await mockGitHub(page)
+  await mockMaps(page, [])
+  await fullMotion(page)
+  // enter 結束時新增行程的面板已經開著
+  await enter(page)
+
+  await page.getByLabel('標題').fill('打到一半')
+  await dragSheetDown(page, 400)
+  await page.waitForTimeout(800)
+  await expect(page.getByRole('dialog', { name: '新增行程' })).toBeVisible()
+  await expect(page.getByLabel('標題')).toHaveValue('打到一半')
+
+  // 按「關閉」會滑下去再消失
+  await page.getByRole('button', { name: '關閉' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  await page.getByRole('button', { name: '全程地圖' }).click()
+  await expect(page.getByRole('dialog', { name: '全程地圖' })).toBeVisible()
+  await dragSheetDown(page, 400)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('頂部列與底部按鈕列是半透明的，內容從底下捲過', async ({ page }) => {
+  await mockGitHub(page)
+  await fullMotion(page)
+  await enter(page)
+  for (const bar of [page.locator('header'), page.getByTestId('bottom-bar')]) {
+    const filter = await bar.evaluate((el) => {
+      const style = getComputedStyle(el)
+      return style.backdropFilter || style.getPropertyValue('-webkit-backdrop-filter')
+    })
+    expect(filter).toContain('blur')
+  }
+})

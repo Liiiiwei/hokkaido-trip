@@ -52,31 +52,77 @@ body {
   justify-content: center;
 }
 
-/* 面板從下方滑入；系統設定減少動態時不動 */
-@keyframes sheet-in {
-  from {
-    transform: translateY(16px);
-    opacity: 0;
+/* 按下去立刻有回饋：手指一碰就縮一點，不等放開 */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button {
+  transition:
+    transform 140ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    background-color 150ms,
+    border-color 150ms,
+    color 150ms,
+    opacity 150ms;
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 60ms;
+}
+.leaflet-container button:active {
+  transform: none;
+}
+
+/* 頂部列與底部按鈕列：半透明的一層，內容從底下捲過 */
+.chrome {
+  background: rgb(255 255 255 / 0.74);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .chrome {
+    background: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
-.sheet-in {
-  animation: sheet-in 160ms ease-out;
-}
-@media (prefers-reduced-motion: reduce) {
-  .sheet-in {
-    animation: none;
+@media (prefers-contrast: more) {
+  .chrome {
+    background: #fff;
+    border-color: #18181b;
   }
 }
 
-/* 換一天時，時間軸一列一列浮上來 */
+/* 面板的位移由程式跟著手指與彈簧算；這裡只先告訴瀏覽器會動 */
+.sheet-panel {
+  will-change: transform;
+}
+/* 系統設定減少動態時不滑動，改成淡入 */
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-panel,
+  .sheet-scrim {
+    animation: sheet-fade 160ms ease-out;
+  }
+  button:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* 換一天時，時間軸一列一列進來；往後一天從右邊來，往前一天從左邊來 */
 @keyframes rise {
   from {
-    transform: translateY(8px);
+    transform: translate3d(calc(var(--day-dir, 0) * 18px), 8px, 0);
     opacity: 0;
   }
 }
 .rise {
-  animation: rise 240ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation: rise 320ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .rise {

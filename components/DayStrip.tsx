@@ -21,7 +21,12 @@ export function DayStrip({
 
   // 選到的那天捲到看得見的位置
   useEffect(() => {
-    activeRef.current?.scrollIntoView({ inline: 'center', block: 'nearest' })
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    activeRef.current?.scrollIntoView({
+      inline: 'center',
+      block: 'nearest',
+      behavior: reduced ? 'auto' : 'smooth',
+    })
   }, [current])
 
   return (
@@ -38,10 +43,10 @@ export function DayStrip({
             type="button"
             aria-pressed={active}
             onClick={() => onSelect(date)}
-            className={`min-w-16 shrink-0 rounded-xl border px-3 py-2 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+            className={`min-w-16 shrink-0 rounded-xl border px-3 py-2 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
               active
                 ? 'border-accent bg-accent text-white'
-                : 'border-zinc-200 bg-white text-zinc-900 active:bg-zinc-100'
+                : 'border-zinc-200 bg-white/80 text-zinc-900 active:bg-zinc-100'
             }`}
           >
             <div className="font-mono text-sm font-semibold">{md}</div>

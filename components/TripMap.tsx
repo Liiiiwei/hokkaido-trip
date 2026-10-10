@@ -55,7 +55,7 @@ export function TripMap({
     }`
 
   return (
-    <Sheet title="全程地圖" onClose={onClose}>
+    <Sheet title="全程地圖" onClose={onClose} swipeToClose>
       {markers.length === 0 && !picked ? (
         <p className="py-8 text-center text-sm text-zinc-500">
           還沒有定位過的地點。編輯行程或住宿時按「找地點」，這裡就會出現。
