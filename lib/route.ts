@@ -37,6 +37,34 @@ export function formatDrive({ minutes, km }: Drive): string {
   return `開車約 ${time} · ${km >= 10 ? Math.round(km) : km} 公里`
 }
 
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+// 排隊一段一段問：免費服務同時收到太多請求會拒絕。被拒絕時等一下再試一次
+export function makeDriveQueue(
+  fetchFn: typeof fetch = fetch,
+  wait: (ms: number) => Promise<void> = sleep,
+): (from: LatLng, to: LatLng) => Promise<Drive> {
+  let tail: Promise<unknown> = Promise.resolve()
+  return (from, to) => {
+    const run = tail.then(async () => {
+      try {
+        return await fetchDrive(from, to, fetchFn)
+      } catch {
+        await wait(1500)
+        return fetchDrive(from, to, fetchFn)
+      }
+    })
+    // 這一段失敗不影響後面排隊的
+    tail = run.then(
+      () => wait(250),
+      () => wait(250),
+    )
+    return run
+  }
+}
+
+const queued = makeDriveQueue()
+
 // 同一段路只問一次：輪詢重畫、切換日期都不會重複發請求
 const cache = new Map<string, Promise<Drive>>()
 
@@ -48,7 +76,7 @@ export function cachedDrive(from: LatLng, to: LatLng): Promise<Drive> {
   const key = driveKey(from, to)
   let hit = cache.get(key)
   if (!hit) {
-    hit = fetchDrive(from, to)
+    hit = queued(from, to)
     cache.set(key, hit)
     // 失敗的不留著，下次再試
     hit.catch(() => cache.delete(key))
