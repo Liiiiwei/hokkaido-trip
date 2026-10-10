@@ -59,7 +59,7 @@ export function MapView({
         }).addTo(map)
         for (const line of content.lines) {
           if (line.length > 1) {
-            L.polyline(line, { color: '#1d3cf0', weight: 3, opacity: 0.7 }).addTo(map)
+            L.polyline(line, { color: '#0e1a2b', weight: 3, opacity: 0.6 }).addTo(map)
           }
         }
         for (const m of content.markers) {

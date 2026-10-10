@@ -87,12 +87,12 @@ export function ItemCard({
             {item.kind === 'all' ? <Users size={11} /> : <Split size={11} />}
             {item.kind === 'all' ? '全員' : '分開'}
           </p>
-          <h3 className="flex items-center gap-2 text-[17px] font-semibold leading-snug tracking-tight">
+          <h3 className="flex items-start gap-2 text-[17px] font-semibold leading-snug tracking-tight">
             <span className="min-w-0 break-words">{item.title}</span>
             {pinNo !== undefined && (
               <span
                 aria-label={`地圖上的 ${pinNo} 號`}
-                className="flex h-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-ink pl-1 pr-1.5 font-mono text-xs font-semibold text-signal"
+                className="mt-[2px] flex h-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-ink pl-1 pr-1.5 font-mono text-xs font-semibold text-signal"
               >
                 <MapPin size={11} />
                 {pinNo}

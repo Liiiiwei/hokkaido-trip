@@ -436,3 +436,50 @@ test('改版後的樣子：深色頂部列、選到的日期與主要按鈕是�
   await expect(stub.getByRole('link', { name: '地圖', exact: true })).toBeVisible()
   expect(await stub.evaluate((el) => getComputedStyle(el).borderTopStyle)).toBe('dashed')
 })
+
+test('旅程天數多到日期列要橫向捲時，選最後一天整頁不會被往旁邊推', async ({ page }) => {
+  await mockGitHub(page)
+  await enter(page)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: '關閉' }).click()
+  await expect(dialog).toHaveCount(0)
+
+  await page.getByRole('button', { name: '編輯旅程' }).click()
+  await dialog.getByLabel('回程日').fill('2030-05-14')
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  await expect(dialog).toHaveCount(0)
+
+  await page.getByRole('navigation', { name: '日期' }).getByRole('button', { name: /^5\/14/ }).click()
+  await page.waitForTimeout(800)
+  const size = await page.evaluate(() => ({
+    pageWidth: document.scrollingElement!.scrollWidth,
+    viewport: document.documentElement.clientWidth,
+    scrollX: window.scrollX,
+    stayLeft: document.querySelector('[data-testid="stay-card"]')!.getBoundingClientRect().left,
+  }))
+  expect(size.pageWidth).toBeLessThanOrEqual(size.viewport)
+  expect(size.scrollX).toBe(0)
+  expect(size.stayLeft).toBeGreaterThanOrEqual(0)
+})
+
+test('標題長到換行時，地圖編號對齊第一行', async ({ page }) => {
+  await mockGitHub(page)
+  await mockMaps(page, [
+    { name: '民宿', display_name: '民宿, 札幌市, 北海道, 日本', lat: '43.098', lon: '141.343' },
+  ])
+  await enter(page)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('標題').fill('飯店退房，行李寄放到今晚住的民宿再出發去玩')
+  await dialog.getByLabel('地點', { exact: true }).fill('民宿')
+  await dialog.getByRole('button', { name: '找地點' }).click()
+  await dialog.getByRole('button', { name: /札幌市/ }).click()
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  await expect(dialog).toHaveCount(0)
+
+  const card = page.getByTestId('item-card').filter({ hasText: '飯店退房' })
+  const heading = (await card.getByRole('heading').boundingBox())!
+  const badge = (await card.getByLabel('地圖上的 1 號').boundingBox())!
+  // 標題確實換行了，編號貼著第一行而不是垂直置中
+  expect(heading.height).toBeGreaterThan(40)
+  expect(badge.y - heading.y).toBeLessThan(8)
+})

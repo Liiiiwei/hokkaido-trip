@@ -43,7 +43,7 @@ export function DayStrip({
             type="button"
             aria-pressed={active}
             onClick={() => onSelect(date)}
-            className={`flex min-w-[4.25rem] shrink-0 flex-col items-center rounded-2xl border px-3 pb-2 pt-1.5 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
+            className={`relative flex min-w-[4.25rem] shrink-0 flex-col items-center rounded-2xl border px-3 pb-2 pt-1.5 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
               active
                 ? 'border-signal bg-signal text-ink'
                 : 'border-white/15 bg-white/[0.06] text-white active:bg-white/15'

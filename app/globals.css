@@ -17,6 +17,12 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* 手機上整頁只上下捲；橫向的內容各自在自己的區塊裡捲 */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background: var(--color-paper);
   color: #0e1a2b;
