@@ -395,7 +395,7 @@ test('頂部列與底部按鈕列是半透明的，內容從底下捲過', async
   }
 })
 
-test('改版後的樣子：深色頂部列、選到的日期與主要按鈕是訊號黃、卡片有票根', async ({ page }) => {
+test('配色：雪白底與淺色頂部列、選到的日期與主要按鈕是鈷藍配白字、卡片有票根', async ({ page }) => {
   await mockGitHub(page)
   await mockMaps(page, [
     { name: '小樽運河', display_name: '小樽運河, 小樽市, 北海道, 日本', lat: '43.199', lon: '141.001' },
@@ -412,21 +412,27 @@ test('改版後的樣子：深色頂部列、選到的日期與主要按鈕是�
 
   const bg = (el: Element) => getComputedStyle(el).backgroundColor
   const channels = (color: string) => (color.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number)
-  const SIGNAL = 'rgb(255, 197, 49)'
+  const SIGNAL = 'rgb(32, 80, 200)'
 
-  // 整頁底色是冷白，頂部列是深色
-  expect(await page.locator('body').evaluate(bg)).toBe('rgb(237, 241, 246)')
+  // 整頁底色是雪白，頂部列是淺色配深色字
+  expect(await page.locator('body').evaluate(bg)).toBe('rgb(245, 247, 251)')
   for (const value of channels(await page.locator('header').evaluate(bg))) {
+    expect(value).toBeGreaterThan(230)
+  }
+  const title = page.getByRole('button', { name: '編輯旅程' })
+  for (const value of channels(await title.evaluate((el) => getComputedStyle(el).color))) {
     expect(value).toBeLessThan(60)
   }
 
-  // 選到的日期、主要按鈕用訊號黃配深色字
+  // 選到的日期、主要按鈕用鈷藍配白字
   const activeDay = page.getByRole('navigation', { name: '日期' }).locator('[aria-pressed="true"]')
   expect(await activeDay.evaluate(bg)).toBe(SIGNAL)
   const add = page.getByRole('button', { name: '新增行程', exact: true })
   expect(await add.evaluate(bg)).toBe(SIGNAL)
-  for (const value of channels(await add.evaluate((el) => getComputedStyle(el).color))) {
-    expect(value).toBeLessThan(60)
+  for (const el of [activeDay, add]) {
+    for (const value of channels(await el.evaluate((node) => getComputedStyle(node).color))) {
+      expect(value).toBeGreaterThan(230)
+    }
   }
 
   // 卡片標出全員或分開，動作列用虛線和上半部隔開，像票根

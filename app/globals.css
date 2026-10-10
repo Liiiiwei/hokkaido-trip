@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
-/* 夜班時刻板：深海軍藍的頂部列、雪白的底、訊號黃只留給「現在選到的」與主要動作；
-   數字用等寬字體。黃和深藍靠明暗就分得出來，不靠色相 */
+/* 雪地時刻板：雪白的底、淺色頂部列、深藍字；鈷藍只留給「現在選到的」與主要動作，
+   上面一律配白字。數字用等寬字體。選中與否靠實心和明暗分，不靠色相 */
 @theme {
   --color-ink: #0e1a2b;
   --color-ink-soft: #1b2a41;
-  --color-signal: #ffc531;
-  --color-signal-deep: #f0b21a;
+  --color-signal: #2050c8;
+  --color-signal-deep: #183f9f;
   --color-accent: #2050c8;
   --color-accent-deep: #183f9f;
-  --color-paper: #edf1f6;
+  --color-paper: #f5f7fb;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
@@ -37,8 +37,8 @@ body {
   justify-content: center;
   border-radius: 9999px;
   border: 2px solid #fff;
-  background: #0e1a2b;
-  color: #ffc531;
+  background: #2050c8;
+  color: #fff;
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
@@ -51,9 +51,9 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 2px solid #0e1a2b;
-  background: #ffc531;
-  color: #0e1a2b;
+  border: 2px solid #2050c8;
+  background: #fff;
+  color: #2050c8;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
 }
 .day-pin span,
@@ -91,20 +91,9 @@ button:active:not(:disabled) {
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
 }
-/* 頂部列是深色的那一層 */
-.chrome-dark {
-  background: rgb(14 26 43 / 0.88);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-}
 @media (prefers-reduced-transparency: reduce) {
   .chrome {
     background: #fff;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .chrome-dark {
-    background: #0e1a2b;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -113,9 +102,6 @@ button:active:not(:disabled) {
   .chrome {
     background: #fff;
     border-color: #0e1a2b;
-  }
-  .chrome-dark {
-    background: #0e1a2b;
   }
 }
 

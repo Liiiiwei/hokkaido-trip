@@ -45,19 +45,19 @@ export function DayStrip({
             onClick={() => onSelect(date)}
             className={`relative flex min-w-[4.25rem] shrink-0 flex-col items-center rounded-2xl border px-3 pb-2 pt-1.5 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
               active
-                ? 'border-signal bg-signal text-ink'
-                : 'border-white/15 bg-white/[0.06] text-white active:bg-white/15'
+                ? 'border-signal bg-signal text-white'
+                : 'border-ink/12 bg-white text-ink active:bg-ink/5'
             }`}
           >
             {/* 讀出來的順序是日期在前；畫面上星期排在日期上面 */}
             <div className="font-mono text-lg font-semibold leading-tight tracking-tight">{md}</div>
             <div
-              className={`order-first text-[11px] ${active ? 'font-semibold' : 'text-white/60'}`}
+              className={`order-first text-[11px] ${active ? 'font-semibold' : 'text-ink/60'}`}
             >
               週{weekday}
             </div>
             <div
-              className={`h-4 max-w-20 truncate text-[11px] ${active ? '' : 'text-white/60'}`}
+              className={`h-4 max-w-20 truncate text-[11px] ${active ? '' : 'text-ink/60'}`}
             >
               {city}
             </div>
@@ -65,7 +65,7 @@ export function DayStrip({
             <div
               aria-hidden="true"
               className={`mt-1 h-1.5 w-1.5 rounded-full ${
-                count === 0 ? 'bg-transparent' : active ? 'bg-ink' : 'bg-signal'
+                count === 0 ? 'bg-transparent' : active ? 'bg-white' : 'bg-signal'
               }`}
             />
             <span className="sr-only">{count > 0 ? `${count} 個行程` : '還沒有行程'}</span>

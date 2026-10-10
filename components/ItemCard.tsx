@@ -92,7 +92,7 @@ export function ItemCard({
             {pinNo !== undefined && (
               <span
                 aria-label={`地圖上的 ${pinNo} 號`}
-                className="mt-[2px] flex h-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-ink pl-1 pr-1.5 font-mono text-xs font-semibold text-signal"
+                className="mt-[2px] flex h-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-signal pl-1 pr-1.5 font-mono text-xs font-semibold text-white"
               >
                 <MapPin size={11} />
                 {pinNo}
@@ -167,7 +167,7 @@ export function ItemCard({
                   key={name}
                   className={`rounded-full px-2 py-0.5 ${
                     name === me
-                      ? 'bg-signal font-semibold text-ink'
+                      ? 'bg-signal font-semibold text-white'
                       : 'border border-zinc-300 bg-white text-zinc-700'
                   }`}
                 >

@@ -145,7 +145,7 @@ export function DayPanel({
         data-testid="stay-card"
         className="ticket flex items-start gap-3 rounded-2xl bg-white py-3 pl-3 pr-1"
       >
-        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-signal text-ink">
+        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-signal bg-white text-signal">
           <BedDouble size={18} />
         </span>
         <div className="min-w-0 flex-1 py-0.5">
