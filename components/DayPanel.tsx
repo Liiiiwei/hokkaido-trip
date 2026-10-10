@@ -11,10 +11,9 @@ import {
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import {
-  coordsOfSpot,
+  driveLeg,
   googleTransitUrl,
   lastStop,
-  originCoords,
   pinsOf,
   prevDate,
   previousStop,
@@ -110,8 +109,7 @@ export function DayPanel({
   // 回程：我當天的最後一站回到當晚的住宿
   const tonight = staySpot(day)
   const last = lastStop(mine)
-  const backFrom = originCoords(last)
-  const backTo = tonight ? coordsOfSpot(tonight) : null
+  const back = tonight ? driveLeg(last, tonight) : null
   const [mapOpen, setMapOpen] = useState(false)
 
   const markers: MapMarker[] = [
@@ -260,8 +258,8 @@ export function DayPanel({
               >
                 <p className="text-xs text-zinc-500">回住宿</p>
                 <p className="break-words text-sm font-semibold">{tonight.title}</p>
-                {backFrom && backTo && (
-                  <DriveNote fromTitle={last.title} from={backFrom} to={backTo} className="mt-1" />
+                {back && (
+                  <DriveNote fromTitle={last.title} from={back.from} to={back.to} className="mt-1" />
                 )}
                 <a
                   href={googleTransitUrl(last, tonight)}

@@ -10,11 +10,10 @@ import {
   UserPlus,
 } from 'lucide-react'
 import {
-  coordsOfSpot,
+  driveLeg,
   googlePlaceUrl,
   googleTransitUrl,
   hasSpot,
-  originCoords,
   type StaySpot,
 } from '@/lib/maps'
 import type { Change } from '@/lib/state'
@@ -50,9 +49,7 @@ export function ItemCard({
 }) {
   const { pending, error, run } = useAction()
   const joined = members.includes(me)
-  // 上一站和這一站都定位過，才估得出車程
-  const driveFrom = originCoords(from)
-  const driveTo = coordsOfSpot(item)
+  const leg = driveLeg(from, item)
 
   function toggle() {
     void run(async () => {
@@ -113,8 +110,8 @@ export function ItemCard({
         </button>
       </div>
 
-      {from && driveFrom && driveTo && (
-        <DriveNote fromTitle={from.title} from={driveFrom} to={driveTo} className="px-3 pb-2" />
+      {from && leg && (
+        <DriveNote fromTitle={from.title} from={leg.from} to={leg.to} className="px-3 pb-2" />
       )}
 
       {hasSpot(item) && (

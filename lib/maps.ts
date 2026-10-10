@@ -120,8 +120,6 @@ export function originCoords(from: (Spot & { title?: string }) | null): { lat: n
   return coordsOf(from)
 }
 
-export const coordsOfSpot = (spot: Spot): { lat: number; lng: number } | null => coordsOf(spot)
-
 // 我當天有地點的最後一站，回住宿的路從這裡算
 export function lastStop(mine: Item[]): Item | null {
   const ordered = sortItems(mine)
@@ -129,4 +127,15 @@ export function lastStop(mine: Item[]): Item | null {
     if (hasSpot(ordered[k])) return ordered[k]
   }
   return null
+}
+
+// 要不要估這一段的車程：兩端都定位過、而且不是同一個點
+export function driveLeg(
+  from: (Spot & { title?: string }) | null,
+  to: Spot,
+): { from: { lat: number; lng: number }; to: { lat: number; lng: number } } | null {
+  const a = originCoords(from)
+  const b = coordsOf(to)
+  if (!a || !b || (a.lat === b.lat && a.lng === b.lng)) return null
+  return { from: a, to: b }
 }

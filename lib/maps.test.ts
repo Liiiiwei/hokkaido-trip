@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   googlePlaceUrl,
+  driveLeg,
   googleTransitUrl,
   lastStop,
   originCoords,
@@ -214,5 +215,25 @@ describe('lastStop', () => {
   it('整天都沒有地點就沒有', () => {
     expect(lastStop([item({ id: 'a', place: '' })])).toBeNull()
     expect(lastStop([])).toBeNull()
+  })
+})
+
+describe('driveLeg', () => {
+  const hotel = { title: '飯店', place: '飯店', lat: 1, lng: 2 }
+  it('兩端都定位過就回傳起訖座標', () => {
+    expect(driveLeg(hotel, item({ place: '雪場', lat: 3, lng: 4 }))).toEqual({
+      from: { lat: 1, lng: 2 },
+      to: { lat: 3, lng: 4 },
+    })
+  })
+  it('起訖是同一個點就不估，免得出現「開車約 1 分 · 0 公里」', () => {
+    expect(driveLeg(hotel, item({ place: '飯店門口集合', lat: 1, lng: 2 }))).toBeNull()
+  })
+  it('任一端沒定位、或上一站是航班，就不估', () => {
+    expect(driveLeg(hotel, item({ place: '雪場' }))).toBeNull()
+    expect(driveLeg(null, item({ place: '雪場', lat: 3, lng: 4 }))).toBeNull()
+    expect(
+      driveLeg(item({ place: '羽田', lat: 1, lng: 2, arrive_place: '新千歲' }), item({ lat: 3, lng: 4 })),
+    ).toBeNull()
   })
 })
