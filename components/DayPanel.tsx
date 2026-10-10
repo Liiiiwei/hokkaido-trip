@@ -1,11 +1,30 @@
 'use client'
 
-import { BedDouble, CalendarPlus, ChevronDown, ChevronUp, Map as MapIcon, Pencil } from 'lucide-react'
+import {
+  BedDouble,
+  CalendarPlus,
+  ChevronDown,
+  ChevronUp,
+  Map as MapIcon,
+  Navigation,
+  Pencil,
+} from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { pinsOf, prevDate, previousStop, stayPinsOf, staySpot } from '@/lib/maps'
+import {
+  coordsOfSpot,
+  googleTransitUrl,
+  lastStop,
+  originCoords,
+  pinsOf,
+  prevDate,
+  previousStop,
+  stayPinsOf,
+  staySpot,
+} from '@/lib/maps'
 import { buildBlocks, dayLabel, filterMine, membersOf } from '@/lib/schedule'
 import type { Change } from '@/lib/state'
 import type { Item, TripData } from '@/lib/types'
+import { DriveNote } from './DriveNote'
 import { ItemCard } from './ItemCard'
 import { MapLegend, MapView, type MapMarker } from './MapView'
 import { RichText } from './RichText'
@@ -18,10 +37,13 @@ const ring =
 function Row({
   start,
   end,
+  gutter,
   hollow,
   index,
   children,
 }: {
+  // 左邊要放時間以外的東西時用（例如回住宿那一列的圖示）
+  gutter?: ReactNode
   start: string | null
   end?: string | null
   // 分開行動用空心節點，和全員行程的實心節點用形狀區分
@@ -35,7 +57,9 @@ function Row({
       style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
     >
       <div className="pt-3 text-right font-mono leading-tight">
-        {start ? (
+        {gutter ? (
+          gutter
+        ) : start ? (
           <>
             <div className="text-sm font-semibold text-zinc-900">{start}</div>
             {end && <div className="text-xs text-zinc-400">{end}</div>}
@@ -83,6 +107,11 @@ export function DayPanel({
   const stays = stayPinsOf(data.days, date)
   // 當天第一站沒有上一站，就從早上出發的住宿（前一晚住的地方）算起
   const morning = staySpot(data.days.find((d) => d.date === prevDate(date)))
+  // 回程：我當天的最後一站回到當晚的住宿
+  const tonight = staySpot(day)
+  const last = lastStop(mine)
+  const backFrom = originCoords(last)
+  const backTo = tonight ? coordsOfSpot(tonight) : null
   const [mapOpen, setMapOpen] = useState(false)
 
   const markers: MapMarker[] = [
@@ -214,6 +243,43 @@ export function DayPanel({
                 </div>
               </Row>
             ),
+          )}
+          {tonight && last && (
+            <Row
+              start={null}
+              index={blocks.length}
+              gutter={
+                <span className="flex justify-end pt-0.5 text-zinc-500">
+                  <BedDouble size={16} />
+                </span>
+              }
+            >
+              <div
+                data-testid="return-leg"
+                className="rounded-xl border border-zinc-200 bg-white px-3 py-2.5"
+              >
+                <p className="text-xs text-zinc-500">回住宿</p>
+                <p className="break-words text-sm font-semibold">{tonight.title}</p>
+                {backFrom && backTo && (
+                  <DriveNote fromTitle={last.title} from={backFrom} to={backTo} className="mt-1" />
+                )}
+                <a
+                  href={googleTransitUrl(last, tonight)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`怎麼去：從「${last.title}」回住宿`}
+                  className={`mt-2 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-800 active:bg-zinc-100 ${ring}`}
+                >
+                  <Navigation size={16} />
+                  怎麼去
+                </a>
+              </div>
+            </Row>
+          )}
+          {pins.length > 0 && (
+            <li className="pl-[3.9rem] text-xs leading-snug text-zinc-500">
+              車程是開車的估計。電車、巴士的班次與搭車地點請按「怎麼去」。
+            </li>
           )}
         </ol>
       )}

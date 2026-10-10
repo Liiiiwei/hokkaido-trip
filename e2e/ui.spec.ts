@@ -64,6 +64,15 @@ async function mockMaps(page: Page, results: unknown[]) {
     }),
   )
   await page.route('https://tile.openstreetmap.org/**', (route) => route.abort())
+  // 車程估計固定回 30 分鐘、12.3 公里
+  await page.route('https://router.project-osrm.org/**', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: { 'access-control-allow-origin': '*' },
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 'Ok', routes: [{ duration: 1800, distance: 12345 }] }),
+    }),
+  )
 }
 
 async function enter(page: Page) {
@@ -242,4 +251,58 @@ test('沒有「只看我的」開關；以前開過的人也看得到全部行�
   await dialog.getByRole('button', { name: '儲存' }).click()
   await expect(page.getByTestId('item-card').filter({ hasText: '別人的行程' })).toBeVisible()
   await expect(page.getByText('只看我的')).toHaveCount(0)
+})
+
+test('編輯面板的備註欄下方會列出偵測到的連結', async ({ page }) => {
+  await mockGitHub(page)
+  await enter(page)
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByText('偵測到的連結')).toHaveCount(0)
+  await dialog.getByLabel('備註').fill('訂位 https://www.example.com/book 菜單 https://menu.test/a')
+  await expect(dialog.getByText('偵測到的連結')).toBeVisible()
+  await expect(dialog.getByRole('link', { name: /example\.com/ })).toHaveAttribute('href', 'https://www.example.com/book')
+  await expect(dialog.getByRole('link', { name: /menu\.test/ })).toHaveAttribute('href', 'https://menu.test/a')
+})
+
+test('從住宿到第一站、以及回住宿，都有開車時間的估計', async ({ page }) => {
+  await mockGitHub(page)
+  await mockMaps(page, [
+    { name: '測試地點', display_name: '測試地點, 札幌市, 北海道, 日本', lat: '43.055', lon: '141.353' },
+  ])
+  await page.goto('/#k=fake_key')
+  await page.getByPlaceholder('你的名字或暱稱').fill('測試')
+  await page.getByRole('button', { name: '進入行程' }).click()
+  const dialog = page.getByRole('dialog')
+
+  // 5/1 晚上住的地方
+  await page.getByRole('button', { name: /的住宿與備註/ }).click()
+  await dialog.getByLabel('住宿名稱').fill('測試飯店')
+  await dialog.getByRole('button', { name: '找地點' }).click()
+  await dialog.getByRole('button', { name: /札幌市/ }).click()
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  await expect(dialog).toHaveCount(0)
+
+  // 5/2 的第一站：從前一晚的住宿出發
+  await page.getByRole('button', { name: /^5\/2/ }).click()
+  await page.getByRole('button', { name: '新增行程', exact: true }).click()
+  await dialog.getByLabel('標題').fill('滑雪')
+  await dialog.getByLabel('地點', { exact: true }).fill('雪場')
+  await dialog.getByRole('button', { name: '找地點' }).click()
+  await dialog.getByRole('button', { name: /札幌市/ }).click()
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  const card = page.getByTestId('item-card').filter({ hasText: '滑雪' })
+  await expect(card.getByText('從「測試飯店」開車約 30 分 · 12 公里')).toBeVisible()
+
+  // 5/1 的最後一站：回當晚的住宿
+  await page.getByRole('button', { name: /^5\/1/ }).click()
+  await page.getByRole('button', { name: '新增行程', exact: true }).click()
+  await dialog.getByLabel('標題').fill('逛街')
+  await dialog.getByLabel('地點', { exact: true }).fill('商店街')
+  await dialog.getByRole('button', { name: '找地點' }).click()
+  await dialog.getByRole('button', { name: /札幌市/ }).click()
+  await dialog.getByRole('button', { name: '儲存' }).click()
+  const back = page.getByTestId('return-leg')
+  await expect(back).toContainText('回住宿')
+  await expect(back).toContainText('測試飯店')
+  await expect(back.getByRole('link', { name: /怎麼去/ })).toHaveAttribute('href', /travelmode=transit/)
 })

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   googlePlaceUrl,
   googleTransitUrl,
+  lastStop,
+  originCoords,
   overviewOf,
   pinsOf,
   previousStop,
@@ -183,5 +185,34 @@ describe('overviewOf', () => {
       { title: 'A', lat: 9, lng: 9, dates: ['2030-05-01', '2030-05-02'] },
       { title: 'B', lat: 8, lng: 8, dates: ['2030-05-03'] },
     ])
+  })
+})
+
+describe('originCoords', () => {
+  it('上一站定位過就用它的座標估車程', () => {
+    expect(originCoords(item({ place: '飯店', lat: 1, lng: 2 }))).toEqual({ lat: 1, lng: 2 })
+    expect(originCoords({ title: '住宿', place: 'A', lat: 3, lng: 4 })).toEqual({ lat: 3, lng: 4 })
+  })
+  it('上一站沒定位、或沒有上一站，就估不出來', () => {
+    expect(originCoords(item({ place: '飯店' }))).toBeNull()
+    expect(originCoords(null)).toBeNull()
+  })
+  it('上一站是航班或長途車時，人在抵達地點而不是它的座標，不估', () => {
+    expect(originCoords(item({ place: '羽田', lat: 1, lng: 2, arrive_place: '新千歲機場' }))).toBeNull()
+  })
+})
+
+describe('lastStop', () => {
+  it('回傳我當天有地點的最後一站，用來算回住宿的路', () => {
+    const list = [
+      item({ id: 'a', start_time: '09:00', place: '雪場' }),
+      item({ id: 'c', start_time: '20:00', place: '' }),
+      item({ id: 'b', start_time: '15:00', place: '小樽' }),
+    ]
+    expect(lastStop(list)?.id).toBe('b')
+  })
+  it('整天都沒有地點就沒有', () => {
+    expect(lastStop([item({ id: 'a', place: '' })])).toBeNull()
+    expect(lastStop([])).toBeNull()
   })
 })

@@ -7,6 +7,7 @@ import type { Change } from '@/lib/state'
 import { upsertDay } from '@/lib/store'
 import type { Day } from '@/lib/types'
 import { useAction } from '@/lib/useAction'
+import { LinkPreview } from './LinkPreview'
 import { PlacePicker, type Picked } from './PlacePicker'
 import { Field, Sheet, inputClass, primaryClass } from './ui'
 
@@ -80,6 +81,7 @@ export function DayForm({
             maxLength={300}
           />
         </Field>
+        <LinkPreview text={note} />
         <button type="submit" className={primaryClass} disabled={pending}>
           {pending ? <LoaderCircle size={18} className="animate-spin" /> : <Check size={18} />}
           {pending ? '儲存中…' : '儲存'}

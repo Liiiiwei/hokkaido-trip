@@ -8,6 +8,7 @@ import { changedFields, type Change } from '@/lib/state'
 import { createItem, deleteItem, updateItem } from '@/lib/store'
 import type { Item, ItemInput, ItemKind } from '@/lib/types'
 import { useAction } from '@/lib/useAction'
+import { LinkPreview } from './LinkPreview'
 import { PlacePicker, type Picked } from './PlacePicker'
 import { Field, Sheet, ghostClass, inputClass, primaryClass } from './ui'
 
@@ -189,6 +190,7 @@ export function ItemForm({
             maxLength={500}
           />
         </Field>
+        <LinkPreview text={note} />
 
         <button type="submit" className={primaryClass} disabled={busy || !title.trim()}>
           {save.pending ? <LoaderCircle size={18} className="animate-spin" /> : <Check size={18} />}

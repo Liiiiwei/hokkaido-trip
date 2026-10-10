@@ -113,3 +113,20 @@ export function overviewOf(items: Item[], days: Day[]): Overview {
   }
   return { groups, stays }
 }
+
+// 估車程用的起點座標。上一站是航班或長途車時，人在抵達地點，它的座標是出發地，不能用
+export function originCoords(from: (Spot & { title?: string }) | null): { lat: number; lng: number } | null {
+  if (!from || from.arrive_place) return null
+  return coordsOf(from)
+}
+
+export const coordsOfSpot = (spot: Spot): { lat: number; lng: number } | null => coordsOf(spot)
+
+// 我當天有地點的最後一站，回住宿的路從這裡算
+export function lastStop(mine: Item[]): Item | null {
+  const ordered = sortItems(mine)
+  for (let k = ordered.length - 1; k >= 0; k -= 1) {
+    if (hasSpot(ordered[k])) return ordered[k]
+  }
+  return null
+}
