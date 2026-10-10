@@ -21,6 +21,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  // 手機瀏覽器的網址列跟著頂部列的深色
+  themeColor: '#0e1a2b',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

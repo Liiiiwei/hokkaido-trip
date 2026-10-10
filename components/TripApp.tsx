@@ -148,9 +148,9 @@ function TripView({ me, onRename }: { me: string; onRename: (name: string) => vo
 
   return (
     <main className="mx-auto min-h-dvh max-w-md" style={{ '--day-dir': dir } as CSSProperties}>
-      <header className="chrome sticky top-0 z-10 border-b border-zinc-200/80">
+      <header className="chrome-dark sticky top-0 z-10 text-white">
         {!connected && (
-          <div role="status" className="bg-zinc-900 px-4 py-2 text-center text-xs text-white">
+          <div role="status" className="bg-signal px-4 py-2 text-center text-xs font-semibold text-ink">
             連線中斷，重新連線中…
           </div>
         )}

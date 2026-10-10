@@ -1,10 +1,15 @@
 @import "tailwindcss";
 
-/* 時刻表風格：冷白底、墨黑字、單一鈷藍強調色；數字用等寬字體 */
+/* 夜班時刻板：深海軍藍的頂部列、雪白的底、訊號黃只留給「現在選到的」與主要動作；
+   數字用等寬字體。黃和深藍靠明暗就分得出來，不靠色相 */
 @theme {
-  --color-accent: #1d3cf0;
-  --color-accent-deep: #162fc0;
-  --color-paper: #f4f5f7;
+  --color-ink: #0e1a2b;
+  --color-ink-soft: #1b2a41;
+  --color-signal: #ffc531;
+  --color-signal-deep: #f0b21a;
+  --color-accent: #2050c8;
+  --color-accent-deep: #183f9f;
+  --color-paper: #edf1f6;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
@@ -14,7 +19,7 @@ html {
 
 body {
   background: var(--color-paper);
-  color: #18181b;
+  color: #0e1a2b;
   font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC",
     "Microsoft JhengHei", sans-serif;
 }
@@ -26,8 +31,8 @@ body {
   justify-content: center;
   border-radius: 9999px;
   border: 2px solid #fff;
-  background: #1d3cf0;
-  color: #fff;
+  background: #0e1a2b;
+  color: #ffc531;
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
@@ -40,9 +45,9 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 2px solid #fff;
-  background: #18181b;
-  color: #fff;
+  border: 2px solid #0e1a2b;
+  background: #ffc531;
+  color: #0e1a2b;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
 }
 .day-pin span,
@@ -80,9 +85,20 @@ button:active:not(:disabled) {
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
 }
+/* 頂部列是深色的那一層 */
+.chrome-dark {
+  background: rgb(14 26 43 / 0.88);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
 @media (prefers-reduced-transparency: reduce) {
   .chrome {
     background: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .chrome-dark {
+    background: #0e1a2b;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -90,8 +106,36 @@ button:active:not(:disabled) {
 @media (prefers-contrast: more) {
   .chrome {
     background: #fff;
-    border-color: #18181b;
+    border-color: #0e1a2b;
   }
+  .chrome-dark {
+    background: #0e1a2b;
+  }
+}
+
+/* 行程卡片：浮在雪白底上的票卡 */
+.ticket {
+  box-shadow:
+    0 0 0 1px rgb(14 26 43 / 0.06),
+    0 10px 24px -14px rgb(14 26 43 / 0.35);
+}
+/* 票根：虛線兩端各咬一個半圓缺口 */
+.ticket-stub::before,
+.ticket-stub::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--color-paper);
+  box-shadow: inset 0 0 0 1px rgb(14 26 43 / 0.08);
+}
+.ticket-stub::before {
+  left: -7px;
+}
+.ticket-stub::after {
+  right: -7px;
 }
 
 /* 面板的位移由程式跟著手指與彈簧算；這裡只先告訴瀏覽器會動 */

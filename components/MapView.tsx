@@ -139,11 +139,11 @@ export function MapLegend({ stopLabel }: { stopLabel: string }) {
   return (
     <p className="mt-1.5 flex items-center gap-4 text-xs text-zinc-500">
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-3 w-3 rounded-full bg-accent" />
+        <span className="inline-block h-3 w-3 rounded-full bg-ink" />
         {stopLabel}
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-3 w-3 rounded-[3px] bg-zinc-900" />
+        <span className="inline-block h-3 w-3 rounded-[3px] border border-ink bg-signal" />
         住宿
       </span>
     </p>

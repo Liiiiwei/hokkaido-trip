@@ -50,7 +50,7 @@ export function TripMap({
   const chip = (active: boolean) =>
     `h-9 shrink-0 rounded-full border px-3 text-sm tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
       active
-        ? 'border-accent bg-accent font-semibold text-white'
+        ? 'border-ink bg-ink font-semibold text-white'
         : 'border-zinc-300 bg-white text-zinc-700 active:bg-zinc-100'
     }`
 

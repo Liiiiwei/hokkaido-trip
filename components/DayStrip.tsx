@@ -30,7 +30,7 @@ export function DayStrip({
   }, [current])
 
   return (
-    <nav aria-label="日期" className="flex gap-2 overflow-x-auto px-4 py-3">
+    <nav aria-label="日期" className="flex gap-2 overflow-x-auto px-4 pb-3 pt-2.5 [scrollbar-width:none]">
       {dates.map((date) => {
         const active = date === current
         const city = days.find((d) => d.date === date)?.city ?? ''
@@ -43,20 +43,29 @@ export function DayStrip({
             type="button"
             aria-pressed={active}
             onClick={() => onSelect(date)}
-            className={`min-w-16 shrink-0 rounded-xl border px-3 py-2 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+            className={`flex min-w-[4.25rem] shrink-0 flex-col items-center rounded-2xl border px-3 pb-2 pt-1.5 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
               active
-                ? 'border-accent bg-accent text-white'
-                : 'border-zinc-200 bg-white/80 text-zinc-900 active:bg-zinc-100'
+                ? 'border-signal bg-signal text-ink'
+                : 'border-white/15 bg-white/[0.06] text-white active:bg-white/15'
             }`}
           >
-            <div className="font-mono text-sm font-semibold">{md}</div>
-            <div className="text-xs opacity-80">週{weekday}</div>
-            <div className="mt-1 h-4 max-w-20 truncate text-xs opacity-80">{city}</div>
-            {/* 有排行程的日子底下有一條線，一眼看出哪幾天還空著 */}
+            {/* 讀出來的順序是日期在前；畫面上星期排在日期上面 */}
+            <div className="font-mono text-lg font-semibold leading-tight tracking-tight">{md}</div>
+            <div
+              className={`order-first text-[11px] ${active ? 'font-semibold' : 'text-white/60'}`}
+            >
+              週{weekday}
+            </div>
+            <div
+              className={`h-4 max-w-20 truncate text-[11px] ${active ? '' : 'text-white/60'}`}
+            >
+              {city}
+            </div>
+            {/* 有排行程的日子底下有一個點，一眼看出哪幾天還空著 */}
             <div
               aria-hidden="true"
-              className={`mx-auto mt-1.5 h-0.5 w-5 rounded-full ${
-                count === 0 ? 'bg-transparent' : active ? 'bg-white' : 'bg-zinc-900'
+              className={`mt-1 h-1.5 w-1.5 rounded-full ${
+                count === 0 ? 'bg-transparent' : active ? 'bg-ink' : 'bg-signal'
               }`}
             />
             <span className="sr-only">{count > 0 ? `${count} 個行程` : '還沒有行程'}</span>

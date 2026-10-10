@@ -60,7 +60,7 @@ function Row({
           gutter
         ) : start ? (
           <>
-            <div className="text-sm font-semibold text-zinc-900">{start}</div>
+            <div className="text-sm font-semibold tracking-tight text-ink">{start}</div>
             {end && <div className="text-xs text-zinc-400">{end}</div>}
           </>
         ) : (
@@ -70,8 +70,8 @@ function Row({
       <div className="relative min-w-0">
         <span
           aria-hidden="true"
-          className={`absolute -left-2.5 top-[1.05rem] h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-zinc-900 ${
-            hollow ? 'bg-paper' : 'bg-zinc-900'
+          className={`absolute -left-2.5 top-[1.05rem] h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-ink ring-4 ring-paper ${
+            hollow ? 'bg-paper' : 'bg-ink'
           }`}
         />
         {children}
@@ -143,9 +143,9 @@ export function DayPanel({
     <section className="px-4 pb-28 pt-3">
       <div
         data-testid="stay-card"
-        className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white py-2.5 pl-3 pr-1"
+        className="ticket flex items-start gap-3 rounded-2xl bg-white py-3 pl-3 pr-1"
       >
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white">
+        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-signal text-ink">
           <BedDouble size={18} />
         </span>
         <div className="min-w-0 flex-1 py-0.5">
@@ -154,7 +154,7 @@ export function DayPanel({
             {day?.stay && day.city ? ` · ${day.city}` : ''}
           </p>
           <p
-            className={`break-words text-base font-semibold leading-snug ${
+            className={`break-words text-[17px] font-semibold leading-snug tracking-tight ${
               day?.stay || day?.city ? '' : 'text-zinc-400'
             }`}
           >
@@ -178,7 +178,7 @@ export function DayPanel({
             type="button"
             aria-expanded={mapOpen}
             onClick={() => setMapOpen((open) => !open)}
-            className={`flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-800 active:bg-zinc-100 ${ring}`}
+            className={`flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-ink/15 bg-white px-3 text-sm text-ink active:bg-zinc-100 ${ring}`}
           >
             <MapIcon size={16} className="shrink-0" />
             <span className="min-w-0 flex-1 truncate text-left">當天地圖 · {summary}</span>
@@ -218,7 +218,7 @@ export function DayPanel({
         // key 帶日期：換一天時整條時間軸重新進場
         <ol
           key={date}
-          className="relative mt-4 space-y-3 before:absolute before:bottom-3 before:left-[3.375rem] before:top-3 before:w-px before:bg-zinc-300"
+          className="relative mt-4 space-y-3 before:absolute before:bottom-3 before:left-[3.375rem] before:top-3 before:w-px before:bg-ink/20"
         >
           {blocks.map((block, index) =>
             block.type === 'all' ? (
@@ -237,8 +237,8 @@ export function DayPanel({
                 hollow
                 index={index}
               >
-                <div className="rounded-2xl border border-dashed border-zinc-400 p-2">
-                  <div className="px-1 pb-2 text-xs font-semibold text-zinc-600">
+                <div className="rounded-[1.25rem] border border-dashed border-ink/35 bg-white/50 p-2">
+                  <div className="px-2 pb-2 pt-0.5 text-xs font-semibold text-ink/70">
                     分開行動 · 選想去的加入
                   </div>
                   <div className="space-y-2">{block.items.map(card)}</div>
@@ -258,10 +258,10 @@ export function DayPanel({
             >
               <div
                 data-testid="return-leg"
-                className="rounded-xl border border-zinc-200 bg-white px-3 py-2.5"
+                className="ticket rounded-2xl bg-white px-4 py-3"
               >
                 <p className="text-xs text-zinc-500">回住宿</p>
-                <p className="break-words text-sm font-semibold">{tonight.title}</p>
+                <p className="break-words text-[15px] font-semibold tracking-tight">{tonight.title}</p>
                 {back && (
                   <DriveNote fromTitle={last.title} from={back.from} to={back.to} className="mt-1" />
                 )}

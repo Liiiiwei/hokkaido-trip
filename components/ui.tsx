@@ -19,7 +19,7 @@ const press =
 export const inputClass =
   'h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-base outline-none transition-colors focus:border-accent'
 
-export const primaryClass = `inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-base font-semibold text-white active:bg-accent-deep disabled:opacity-50 ${press}`
+export const primaryClass = `inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-signal px-4 text-base font-semibold text-ink active:bg-signal-deep disabled:opacity-50 ${press}`
 
 export const ghostClass = `inline-flex h-11 items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-4 text-sm text-zinc-700 active:bg-zinc-100 disabled:opacity-50 ${press}`
 

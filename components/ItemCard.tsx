@@ -6,8 +6,10 @@ import {
   Navigation,
   Pencil,
   PlaneLanding,
+  Split,
   UserMinus,
   UserPlus,
+  Users,
 } from 'lucide-react'
 import {
   driveLeg,
@@ -25,7 +27,7 @@ import { RichText } from './RichText'
 import { ghostClass } from './ui'
 
 const linkClass =
-  'inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-800 transition-colors active:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+  'inline-flex h-11 items-center justify-center gap-1.5 text-sm font-semibold text-ink active:bg-ink/5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent'
 
 // 行程卡片。時間顯示在左邊的時間軸上，卡片本身只放內容與動作
 export function ItemCard({
@@ -71,16 +73,26 @@ export function ItemCard({
   return (
     <article
       data-testid="item-card"
-      className="overflow-hidden rounded-xl border border-zinc-200 bg-white"
+      data-kind={item.kind}
+      className="ticket overflow-hidden rounded-2xl bg-white"
     >
-      <div className="flex items-start gap-1 py-2.5 pl-3 pr-1">
+      <div className="flex items-start gap-1 pb-3 pl-4 pr-1 pt-2.5">
         <div className="min-w-0 flex-1 py-0.5">
-          <h3 className="flex items-center gap-2 text-base font-semibold leading-snug">
+          {/* 全員是實心標籤，分開是外框標籤：用形狀分，不靠顏色 */}
+          <p
+            className={`mb-1 inline-flex h-5 items-center gap-1 rounded-full px-2 text-[11px] font-semibold ${
+              item.kind === 'all' ? 'bg-ink text-white' : 'border border-ink/40 text-ink'
+            }`}
+          >
+            {item.kind === 'all' ? <Users size={11} /> : <Split size={11} />}
+            {item.kind === 'all' ? '全員' : '分開'}
+          </p>
+          <h3 className="flex items-center gap-2 text-[17px] font-semibold leading-snug tracking-tight">
             <span className="min-w-0 break-words">{item.title}</span>
             {pinNo !== undefined && (
               <span
                 aria-label={`地圖上的 ${pinNo} 號`}
-                className="flex h-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-accent pl-1 pr-1.5 font-mono text-xs font-semibold text-white"
+                className="flex h-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-ink pl-1 pr-1.5 font-mono text-xs font-semibold text-signal"
               >
                 <MapPin size={11} />
                 {pinNo}
@@ -99,7 +111,9 @@ export function ItemCard({
               <span className="min-w-0 break-words">抵達：{item.arrive_place}</span>
             </p>
           )}
-          {item.note && <RichText text={item.note} className="mt-1.5 text-sm text-zinc-500" />}
+          {item.note && (
+            <RichText text={item.note} className="mt-1.5 text-sm leading-relaxed text-zinc-500" />
+          )}
         </div>
         <button
           type="button"
@@ -112,11 +126,14 @@ export function ItemCard({
       </div>
 
       {from && leg && (
-        <DriveNote fromTitle={from.title} from={leg.from} to={leg.to} className="px-3 pb-2" />
+        <DriveNote fromTitle={from.title} from={leg.from} to={leg.to} className="px-4 pb-3" />
       )}
 
       {hasSpot(item) && (
-        <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+        <div
+          data-testid="card-stub"
+          className="ticket-stub relative grid grid-cols-2 divide-x divide-dashed divide-ink/20 border-t border-dashed border-ink/25"
+        >
           <a
             href={googlePlaceUrl(item)}
             target="_blank"
@@ -140,7 +157,7 @@ export function ItemCard({
       )}
 
       {item.kind === 'split' && (
-        <div className="flex items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50 px-3 py-2">
+        <div className="flex items-center justify-between gap-3 border-t border-ink/10 bg-paper/60 py-2 pl-4 pr-3">
           <div className="flex flex-wrap gap-1.5 text-sm">
             {members.length === 0 ? (
               <span className="text-zinc-500">還沒有人加入</span>
@@ -150,7 +167,7 @@ export function ItemCard({
                   key={name}
                   className={`rounded-full px-2 py-0.5 ${
                     name === me
-                      ? 'bg-accent font-semibold text-white'
+                      ? 'bg-signal font-semibold text-ink'
                       : 'border border-zinc-300 bg-white text-zinc-700'
                   }`}
                 >
@@ -163,7 +180,7 @@ export function ItemCard({
             type="button"
             disabled={pending}
             onClick={toggle}
-            className={`${ghostClass} h-10 shrink-0 ${joined ? '' : 'border-zinc-900 font-semibold text-zinc-900'}`}
+            className={`${ghostClass} h-10 shrink-0 ${joined ? '' : 'border-ink bg-ink font-semibold text-white active:bg-ink-soft'}`}
           >
             {pending ? (
               <LoaderCircle size={16} className="animate-spin" />
@@ -178,7 +195,7 @@ export function ItemCard({
       )}
 
       {error && (
-        <p role="alert" className="px-3 pb-3 pt-2 text-sm text-red-700">
+        <p role="alert" className="px-4 pb-3 pt-2 text-sm text-red-700">
           {error}
         </p>
       )}

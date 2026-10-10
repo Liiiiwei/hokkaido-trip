@@ -5,7 +5,7 @@ import { dayLabel } from '@/lib/schedule'
 import type { Trip } from '@/lib/types'
 
 const ring =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal'
 
 export function Header({
   trip,
@@ -30,9 +30,9 @@ export function Header({
       >
         <span className="flex items-center gap-1.5">
           <span className="truncate text-lg font-semibold tracking-tight">{trip.title}</span>
-          <Pencil size={14} className="shrink-0 text-zinc-400" />
+          <Pencil size={14} className="shrink-0 text-white/50" />
         </span>
-        <span className="block font-mono text-xs text-zinc-500">
+        <span className="block font-mono text-xs text-white/60">
           {dayLabel(trip.start_date)} – {dayLabel(trip.end_date)}
         </span>
       </button>
@@ -40,7 +40,7 @@ export function Header({
         type="button"
         onClick={onOpenMap}
         aria-label="全程地圖"
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-white/70 text-zinc-700 active:bg-zinc-100 ${ring}`}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white active:bg-white/20 ${ring}`}
       >
         <MapIcon size={18} />
       </button>
@@ -48,9 +48,9 @@ export function Header({
         type="button"
         onClick={onRename}
         aria-label={`目前身分 ${me}，點此改名`}
-        className={`inline-flex h-11 max-w-[34%] shrink-0 items-center gap-1.5 rounded-full border border-zinc-300 bg-white/70 px-3 text-sm active:bg-zinc-100 ${ring}`}
+        className={`inline-flex h-11 max-w-[34%] shrink-0 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-sm text-white active:bg-white/20 ${ring}`}
       >
-        <User size={16} className="shrink-0 text-zinc-500" />
+        <User size={16} className="shrink-0 text-white/60" />
         <span className="truncate">{me}</span>
       </button>
     </div>
