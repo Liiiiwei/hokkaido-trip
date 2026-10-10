@@ -26,10 +26,13 @@ export function MapView({
   markers,
   lines,
   heightClass = 'h-56',
+  lockDragOnTouch = false,
 }: {
   markers: MapMarker[]
   lines: MapLine[]
   heightClass?: string
+  // 嵌在會捲動的頁面裡時設為 true：手機上單指拖地圖會卡住頁面捲動
+  lockDragOnTouch?: boolean
 }) {
   const box = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
@@ -45,7 +48,11 @@ export function MapView({
       .then((mod) => {
         const L = mod.default ?? mod
         if (cancelled || !box.current) return
-        map = L.map(box.current, { scrollWheelZoom: false })
+        const touch = window.matchMedia('(pointer: coarse)').matches
+        map = L.map(box.current, {
+          scrollWheelZoom: false,
+          dragging: !(lockDragOnTouch && touch),
+        })
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
           attribution: '&copy; OpenStreetMap',
@@ -92,7 +99,7 @@ export function MapView({
       cancelled = true
       map?.remove()
     }
-  }, [key, attempt])
+  }, [key, attempt, lockDragOnTouch])
 
   return (
     // isolate：地圖套件內部的層級很高，關在這裡才不會蓋住面板與底部按鈕

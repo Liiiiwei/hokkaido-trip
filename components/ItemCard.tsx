@@ -80,8 +80,9 @@ export function ItemCard({
             {pinNo !== undefined && (
               <span
                 aria-label={`地圖上的 ${pinNo} 號`}
-                className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-accent px-1 font-mono text-xs font-semibold text-white"
+                className="flex h-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-accent pl-1 pr-1.5 font-mono text-xs font-semibold text-white"
               >
+                <MapPin size={11} />
                 {pinNo}
               </span>
             )}

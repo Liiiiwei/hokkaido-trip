@@ -104,7 +104,8 @@ test('找地點定位後，卡片有地圖與怎麼去，當天地圖出現圖�
   expect(new URL(route!).searchParams.get('destination')).toBe('43.199,141.001')
   expect(new URL(route!).searchParams.get('origin')).toBeNull()
 
-  await page.getByRole('button', { name: /當天地圖/ }).click()
+  // 地圖預設展開，不用點開就看得到圖釘
+  await expect(page.getByRole('button', { name: /當天地圖/ })).toHaveAttribute('aria-expanded', 'true')
   await expect(page.locator('.leaflet-marker-icon')).toHaveCount(1)
   await expect(page.locator('.leaflet-marker-icon')).toHaveText('1')
 })
@@ -167,9 +168,11 @@ test('住宿定位後，當天地圖與全程地圖都有住宿圖釘', async ({
   await expect(dialog).toHaveCount(0)
 
   await expect(page.getByTestId('stay-card')).toContainText('測試飯店')
-  await page.getByRole('button', { name: /當天地圖/ }).click()
+  // 地圖預設展開
   await expect(page.locator('.stay-pin')).toHaveCount(1)
+  // 收起來之後圖釘就不在畫面上
   await page.getByRole('button', { name: /當天地圖/ }).click()
+  await expect(page.locator('.stay-pin')).toHaveCount(0)
 
   await page.getByRole('button', { name: '全程地圖' }).click()
   const overview = page.getByRole('dialog', { name: '全程地圖' })

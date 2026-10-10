@@ -110,7 +110,7 @@ export function DayPanel({
   const tonight = staySpot(day)
   const last = lastStop(mine)
   const back = tonight ? driveLeg(last, tonight) : null
-  const [mapOpen, setMapOpen] = useState(false)
+  const [mapOpen, setMapOpen] = useState(true)
 
   const markers: MapMarker[] = [
     ...stays.map((s) => ({ ...s, kind: 'stay' as const, text: '', title: `住宿：${s.title}` })),
@@ -196,8 +196,12 @@ export function DayPanel({
       </div>
       {mapOpen && markers.length > 0 && (
         <div className="mt-2">
-          <MapView markers={markers} lines={[pins.map((p) => [p.lat, p.lng])]} />
-          <MapLegend stopLabel="行程順序" />
+          <MapView markers={markers} lines={[pins.map((p) => [p.lat, p.lng])]} lockDragOnTouch />
+          <MapLegend stopLabel="行程順序（卡片上的數字）" />
+          {/* 只在觸控裝置顯示：手機上單指留給捲動頁面 */}
+          <p className="mt-1 hidden text-xs text-zinc-500 [@media(pointer:coarse)]:block">
+            單指滑動是捲頁面，雙指可以縮放地圖；要拖動地圖請開右上角的全程地圖。
+          </p>
         </div>
       )}
 
