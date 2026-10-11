@@ -79,9 +79,8 @@ export function InstallTip() {
         <p className="mt-1 text-zinc-600">沒有網址列，沒訊號時也看得到上次的行程。</p>
       ) : (
         <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-zinc-600">
-          <li>先按下面的「複製通行連結」</li>
           <li>按瀏覽器的分享鈕或選單，選「加入主畫面」</li>
-          <li>從主畫面打開，把連結貼上去</li>
+          <li>從主畫面打開，輸入密語（或貼上通行連結）</li>
         </ol>
       )}
       <div className="mt-3 flex flex-wrap gap-2">

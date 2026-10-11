@@ -102,5 +102,5 @@ test('兩個人的畫面會同步', async ({ browser }) => {
 test('沒有鑰匙時顯示說明', async ({ browser }) => {
   const page = await (await browser.newContext()).newPage()
   await page.goto('/')
-  await expect(page.getByText('請用群組裡的完整連結開啟')).toBeVisible()
+  await expect(page.getByText('輸入密語')).toBeVisible()
 })
