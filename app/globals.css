@@ -10,11 +10,56 @@
   --color-accent: #2050c8;
   --color-accent-deep: #183f9f;
   --color-paper: #f5f7fb;
+  /* 卡片、面板、輸入框的底；以及壓在深藍色塊上的字 */
+  --color-surface: #ffffff;
+  --color-on-ink: #ffffff;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* 深色模式跟著手機的設定走：只換這幾個顏色的值，元件不用各自判斷。
+   灰階整組反過來（原本越深的字，在深色底上越亮）；鈷藍色塊稍微提亮、上面仍配白字；
+   連結與外框用更亮的藍，在深色底上才看得清楚 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-ink: #e6ecf7;
+    --color-ink-soft: #cfd8e8;
+    --color-on-ink: #0e1a2b;
+    --color-paper: #0b1220;
+    --color-surface: #141d2e;
+    --color-signal: #3565e0;
+    --color-signal-deep: #2a54c4;
+    --color-accent: #8fb0ff;
+    --color-accent-deep: #b4caff;
+    --color-zinc-100: #1c2638;
+    --color-zinc-200: #263247;
+    --color-zinc-300: #34425c;
+    --color-zinc-400: #7c8aa3;
+    --color-zinc-500: #93a0b8;
+    --color-zinc-600: #a9b4c8;
+    --color-zinc-700: #c3cbda;
+    --color-zinc-800: #dbe1ec;
+    --color-red-700: #ff9b8f;
+  }
+}
+
+:root {
+  /* 頂部列與底部列半透明的底色 */
+  --chrome-bg: rgb(255 255 255 / 0.74);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chrome-bg: rgb(20 29 46 / 0.74);
+  }
 }
 
 html {
   -webkit-text-size-adjust: 100%;
+}
+
+/* 捲到頂再往下拉不會整頁跟著彈、也不會觸發瀏覽器的下拉重新整理（行程本來就會自動更新） */
+html,
+body {
+  overscroll-behavior-y: none;
 }
 
 /* 手機上整頁只上下捲；橫向的內容各自在自己的區塊裡捲 */
@@ -25,7 +70,7 @@ body {
 
 body {
   background: var(--color-paper);
-  color: #0e1a2b;
+  color: var(--color-ink);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC",
     "Microsoft JhengHei", sans-serif;
 }
@@ -37,7 +82,7 @@ body {
   justify-content: center;
   border-radius: 9999px;
   border: 2px solid #fff;
-  background: #2050c8;
+  background: var(--color-signal);
   color: #fff;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -51,9 +96,9 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 2px solid #2050c8;
+  border: 2px solid var(--color-signal);
   background: #fff;
-  color: #2050c8;
+  color: var(--color-signal);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
 }
 .day-pin span,
@@ -69,7 +114,15 @@ a {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-button {
+/* 按鈕是拿來按的不是拿來讀的：長按不反白文字、不跳出系統選單。內文照常可以選取複製 */
+button,
+.control {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+button,
+.control {
   transition:
     transform 140ms cubic-bezier(0.2, 0.7, 0.2, 1),
     background-color 150ms,
@@ -77,7 +130,8 @@ button {
     color 150ms,
     opacity 150ms;
 }
-button:active:not(:disabled) {
+button:active:not(:disabled),
+.control:active {
   transform: scale(0.97);
   transition-duration: 60ms;
 }
@@ -87,21 +141,21 @@ button:active:not(:disabled) {
 
 /* 頂部列與底部按鈕列：半透明的一層，內容從底下捲過 */
 .chrome {
-  background: rgb(255 255 255 / 0.74);
+  background: var(--chrome-bg);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
 }
 @media (prefers-reduced-transparency: reduce) {
   .chrome {
-    background: #fff;
+    background: var(--color-surface);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
 @media (prefers-contrast: more) {
   .chrome {
-    background: #fff;
-    border-color: #0e1a2b;
+    background: var(--color-surface);
+    border-color: var(--color-ink);
   }
 }
 
@@ -130,9 +184,14 @@ button:active:not(:disabled) {
   right: -7px;
 }
 
-/* 面板的位移由程式跟著手指與彈簧算；這裡只先告訴瀏覽器會動 */
+/* 面板的位移由程式跟著手指與彈簧算；這裡只先告訴瀏覽器會動。
+   面板裡捲到底不會帶動後面的頁面；背景那層不接捲動 */
 .sheet-panel {
   will-change: transform;
+  overscroll-behavior: contain;
+}
+.sheet-scrim {
+  touch-action: none;
 }
 /* 系統設定減少動態時不滑動，改成淡入 */
 @keyframes sheet-fade {
@@ -145,7 +204,8 @@ button:active:not(:disabled) {
   .sheet-scrim {
     animation: sheet-fade 160ms ease-out;
   }
-  button:active:not(:disabled) {
+  button:active:not(:disabled),
+  .control:active {
     transform: none;
   }
 }
@@ -163,5 +223,99 @@ button:active:not(:disabled) {
 @media (prefers-reduced-motion: reduce) {
   .rise {
     animation: none;
+  }
+}
+
+/* 深色模式：卡片靠一圈淡淡的亮邊和底色分開，地圖圖磚反相成深色 */
+@media (prefers-color-scheme: dark) {
+  .ticket {
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.07),
+      0 10px 24px -14px rgb(0 0 0 / 0.8);
+  }
+  .ticket-stub::before,
+  .ticket-stub::after {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  }
+  .leaflet-tile-pane {
+    filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9);
+  }
+  .leaflet-container {
+    background: #0b1220;
+  }
+}
+
+/* 卡片可以往左滑，露出後面的編輯與刪除。橫向交給卡片，直向仍是捲頁面 */
+.swipe-card {
+  touch-action: pan-y pinch-zoom;
+}
+.swipe-face {
+  transition: transform 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.swipe-card[data-dragging] .swipe-face {
+  transition: none;
+}
+
+/* 可以調順序的卡片：長按拿起來。拿起來的那張浮高一點，其他張讓位 */
+.sortable {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  transition:
+    transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 200ms;
+}
+.sortable[data-lifted] {
+  z-index: 5;
+  transition: box-shadow 200ms;
+  box-shadow:
+    0 0 0 1px rgb(14 26 43 / 0.08),
+    0 18px 36px -12px rgb(14 26 43 / 0.45);
+}
+.sortable[data-settling] {
+  transition:
+    transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 200ms;
+}
+.grip {
+  touch-action: none;
+}
+
+/* 卡片以外的地方左右滑是換日：內容跟著手指，放手不夠遠就彈回來 */
+.day-swipe {
+  touch-action: pan-y pinch-zoom;
+}
+.day-track {
+  transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.day-swipe[data-dragging] .day-track {
+  transition: none;
+}
+
+/* 當天地圖的收合：高度從 0 長到內容的高度 */
+.fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 300ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 200ms;
+}
+.fold[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.fold > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-face,
+  .sortable,
+  .sortable[data-settling],
+  .day-track,
+  .fold {
+    transition: none;
   }
 }

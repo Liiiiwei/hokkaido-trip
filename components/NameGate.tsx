@@ -24,6 +24,9 @@ export function NameGate({ onDone }: { onDone: (name: string) => void }) {
       >
         <input
           className={inputClass}
+          enterKeyHint="go"
+          autoComplete="nickname"
+          autoCorrect="off"
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
           placeholder="你的名字或暱稱"

@@ -84,6 +84,19 @@ const INPUT_KEYS = [
   'arrive_place',
 ] as const
 
+// 把修改疊到行程上。順序只在同一天、同開始時間、同類型的那一組裡有意義，
+// 這三個有任何一個改了就是換到別組，原本的順序不能帶過去
+export function mergePatch(current: Item, patch: Partial<ItemInput>, updatedAt: string): Item {
+  const moved = 'day' in patch || 'start_time' in patch || 'kind' in patch
+  return {
+    ...current,
+    ...patch,
+    // 明寫成沒有：存檔時這個欄位會消失，疊到畫面上的舊資料時也會把舊順序蓋掉
+    ...(moved ? { order: undefined } : {}),
+    updated_at: updatedAt,
+  }
+}
+
 // 選填欄位沒填可能是 undefined、null 或空字串，都當成沒有
 const blank = (v: unknown) => (v === undefined || v === '' ? null : v)
 

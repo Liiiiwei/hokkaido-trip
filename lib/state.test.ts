@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyChange, changedFields } from './state'
+import { applyChange, changedFields, mergePatch } from './state'
 import type { Item, TripData } from './types'
 
 const item = (id: string, title = 't'): Item => ({
@@ -238,5 +238,31 @@ describe('applyChange 保留不認得的欄位', () => {
       old: null,
     })
     expect(out.items[0]).toMatchObject({ title: '改過', budget: 3000 })
+  })
+})
+
+describe('mergePatch', () => {
+  const sorted = { ...item('i1'), order: 2 }
+
+  it('只改標題或備註時，拖曳調過的順序留著', () => {
+    const out = mergePatch(sorted, { title: '新標題' }, '2027-01-02T00:00:00Z')
+    expect(out.order).toBe(2)
+    expect(out.title).toBe('新標題')
+    expect(out.updated_at).toBe('2027-01-02T00:00:00Z')
+  })
+
+  it('改了開始時間、類型或日期就是換組，順序不帶過去，存檔時這個欄位會消失', () => {
+    for (const patch of [{ start_time: '10:00' }, { kind: 'all' as const }, { day: '2027-01-11' }]) {
+      const out = mergePatch(sorted, patch, 'now')
+      expect(out.order).toBeUndefined()
+      expect('order' in JSON.parse(JSON.stringify(out))).toBe(false)
+    }
+  })
+
+  it('疊回畫面上的舊資料時，舊順序也會被蓋掉', () => {
+    const data = { ...base, items: [sorted] }
+    const row = mergePatch(sorted, { start_time: '10:00' }, 'now')
+    const out = applyChange(data, { table: 'items', eventType: 'UPDATE', new: row, old: null })
+    expect(out.items[0].order).toBeUndefined()
   })
 })

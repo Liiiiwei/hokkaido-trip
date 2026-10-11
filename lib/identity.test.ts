@@ -2,12 +2,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   adoptKeyFromUrl,
+  keyFromText,
   loadKey,
   loadName,
   normalizeName,
   parseKey,
   saveKey,
   saveName,
+  shareLink,
 } from './identity'
 
 afterEach(() => {
@@ -88,5 +90,23 @@ describe('adoptKeyFromUrl', () => {
     window.location.hash = '#other'
     expect(adoptKeyFromUrl()).toBeNull()
     expect(window.location.hash).toBe('#other')
+  })
+})
+
+describe('keyFromText', () => {
+  it('貼整個連結或前後多了空白、文字都找得到', () => {
+    expect(keyFromText('  https://x.github.io/trip/#k=github_pat_ABC123  ')).toBe('github_pat_ABC123')
+    expect(keyFromText('行程連結：https://x.github.io/trip/#k=abc 記得收好')).toBe('abc')
+  })
+
+  it('沒有權杖就是 null', () => {
+    expect(keyFromText('https://x.github.io/trip/')).toBeNull()
+    expect(keyFromText('')).toBeNull()
+  })
+})
+
+describe('shareLink', () => {
+  it('用目前的網址加上權杖，原本的參數不帶', () => {
+    expect(shareLink('https://x.github.io/trip/?v=abc', 'k1')).toBe('https://x.github.io/trip/#k=k1')
   })
 })

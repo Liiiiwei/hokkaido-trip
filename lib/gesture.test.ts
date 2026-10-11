@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { project, rubberband, shouldDismiss, springAt, velocityOf } from './gesture'
+import {
+  axisOf,
+  dayStep,
+  project,
+  reorderPreview,
+  rubberband,
+  settleReveal,
+  shouldDismiss,
+  springAt,
+  velocityOf,
+} from './gesture'
 
 describe('project', () => {
   it('速度越快，預估停下的位置越遠', () => {
@@ -85,5 +95,76 @@ describe('springAt', () => {
   it('接手放手時的速度：一開始照原本的速度繼續走', () => {
     const { v } = springAt(100, 800, 0.35, 0)
     expect(v).toBe(800)
+  })
+})
+
+describe('axisOf', () => {
+  it('動得還不夠遠時不判斷', () => {
+    expect(axisOf(4, 6)).toBeNull()
+  })
+
+  it('橫向明顯比較多才算橫滑，斜著滑留給上下捲', () => {
+    expect(axisOf(-30, 5)).toBe('x')
+    expect(axisOf(14, 13)).toBe('y')
+    expect(axisOf(3, 40)).toBe('y')
+  })
+})
+
+describe('settleReveal', () => {
+  it('拉過一半就停在露出的位置，不到一半收回去', () => {
+    expect(settleReveal({ offset: -90, velocity: 0, width: 144 })).toBe(-144)
+    expect(settleReveal({ offset: -40, velocity: 0, width: 144 })).toBe(0)
+  })
+
+  it('輕輕一甩也算：看預估會停在哪', () => {
+    expect(settleReveal({ offset: -20, velocity: -400, width: 144 })).toBe(-144)
+    expect(settleReveal({ offset: -120, velocity: 600, width: 144 })).toBe(0)
+  })
+})
+
+describe('dayStep', () => {
+  it('往左滑夠遠是下一天，往右是上一天，不夠遠不換', () => {
+    expect(dayStep({ offset: -180, velocity: 0, width: 390 })).toBe(1)
+    expect(dayStep({ offset: 180, velocity: 0, width: 390 })).toBe(-1)
+    expect(dayStep({ offset: -60, velocity: 0, width: 390 })).toBe(0)
+  })
+
+  it('短短一甩也會換', () => {
+    expect(dayStep({ offset: -30, velocity: -500, width: 390 })).toBe(1)
+  })
+})
+
+describe('reorderPreview', () => {
+  // 三張高度不同的卡片，間距 12
+  const boxes = [
+    { top: 0, height: 100 },
+    { top: 112, height: 60 },
+    { top: 184, height: 80 },
+  ]
+
+  it('沒拖過別人的中線就留在原位', () => {
+    expect(reorderPreview(boxes, 0, 40)).toEqual({ to: 0, shifts: [0, 0, 0], settle: 0 })
+  })
+
+  it('往下拖過下一張的中線：那一張往上讓出自己的高度加間距', () => {
+    const r = reorderPreview(boxes, 0, 100)
+    expect(r.to).toBe(1)
+    expect(r.shifts).toEqual([0, -112, 0])
+    // 落點：第二張讓上去後，自己的底對齊它原本的底
+    expect(r.settle).toBe(72)
+  })
+
+  it('一路拖到最後', () => {
+    const r = reorderPreview(boxes, 0, 200)
+    expect(r.to).toBe(2)
+    expect(r.shifts).toEqual([0, -112, -112])
+    expect(r.settle).toBe(164)
+  })
+
+  it('往上拖：被越過的往下讓，自己落在對方原本的位置', () => {
+    const r = reorderPreview(boxes, 2, -180)
+    expect(r.to).toBe(0)
+    expect(r.shifts).toEqual([92, 92, 0])
+    expect(r.settle).toBe(-184)
   })
 })

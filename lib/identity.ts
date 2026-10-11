@@ -8,7 +8,7 @@ export function normalizeName(raw: string): string {
   return Array.from(clean).slice(0, MAX_NAME).join('').trim()
 }
 
-function read(key: string): string | null {
+export function read(key: string): string | null {
   try {
     return window.localStorage.getItem(key)
   } catch {
@@ -17,7 +17,7 @@ function read(key: string): string | null {
 }
 
 // 回傳有沒有存成功
-function write(key: string, value: string): boolean {
+export function write(key: string, value: string): boolean {
   try {
     window.localStorage.setItem(key, value)
     return true
@@ -42,12 +42,32 @@ export function parseKey(hash: string): string | null {
   return match ? match[1] : null
 }
 
+// 從貼上的一段文字裡找出權杖：整個分享連結、或只有 #k= 後面那段都可以
+export function keyFromText(text: string): string | null {
+  const match = /#k=([A-Za-z0-9_]+)/.exec(text.trim())
+  return match ? match[1] : null
+}
+
+// 給同一個人換裝置或裝到主畫面用的完整連結
+export function shareLink(href: string, key: string): string {
+  const url = new URL(href)
+  return `${url.origin}${url.pathname}#k=${key}`
+}
+
 export function loadKey(): string | null {
   return read(KEY_KEY) || null
 }
 
 export function saveKey(key: string): boolean {
   return write(KEY_KEY, key)
+}
+
+export function clearKey(): void {
+  try {
+    window.localStorage.removeItem(KEY_KEY)
+  } catch {
+    // 清不掉就留著，下次貼上新連結時會蓋過去
+  }
 }
 
 // 網址上有權杖就收下來。存得進裝置才把它從網址列拿掉（避免截圖或轉貼外流）；

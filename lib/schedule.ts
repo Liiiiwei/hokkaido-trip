@@ -21,14 +21,17 @@ export function listDates(start: string, end: string): string[] {
   return out
 }
 
-// 依開始時間排；沒填時間排最後；同時間全員在前
+// 依開始時間排；沒填時間排最後；同時間全員在前；再來是拖曳調過的順序
 export function sortItems(items: Item[]): Item[] {
   const timeKey = (t: string | null) => t ?? '99:99'
   const kindRank = (i: Item) => (i.kind === 'all' ? 0 : 1)
+  // 沒調過順序的排在調過的後面
+  const orderKey = (i: Item) => i.order ?? Number.MAX_SAFE_INTEGER
   return [...items].sort(
     (x, y) =>
       timeKey(x.start_time).localeCompare(timeKey(y.start_time)) ||
       kindRank(x) - kindRank(y) ||
+      orderKey(x) - orderKey(y) ||
       x.title.localeCompare(y.title, 'zh-Hant') ||
       x.id.localeCompare(y.id),
   )
@@ -88,4 +91,41 @@ export function dayParts(date: string): { md: string; weekday: string } {
 export function dayLabel(date: string): string {
   const { md, weekday } = dayParts(date)
   return `${md}（${weekday}）`
+}
+
+// 可以互相調先後的一組：同一天裡開始時間與類型都相同的行程（沒填時間的算同一組）。
+// 開始時間不同的行程先後由時間決定，不能拖
+export function tieGroup(items: Item[], item: Item): Item[] {
+  return sortItems(
+    items.filter(
+      (i) => i.day === item.day && i.kind === item.kind && i.start_time === item.start_time,
+    ),
+  )
+}
+
+// 把第 from 個搬到第 to 個的位置
+export function moved<T>(list: T[], from: number, to: number): T[] {
+  const next = [...list]
+  const [picked] = next.splice(from, 1)
+  next.splice(to, 0, picked)
+  return next
+}
+
+export function clockOf(now: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
+export type Live = { id: string; state: 'now' | 'next' }
+
+// 今天現在該看哪一筆：正在進行的優先，否則是下一個要開始的；都過了就沒有。
+// 沒填時間的行程不知道什麼時候，不列入
+export function liveStop(items: Item[], clock: string): Live | null {
+  const timed = sortItems(items).filter((i) => i.start_time !== null)
+  const now = timed.find(
+    (i) => i.start_time! <= clock && i.end_time !== null && i.end_time >= clock,
+  )
+  if (now) return { id: now.id, state: 'now' }
+  const next = timed.find((i) => i.start_time! > clock)
+  return next ? { id: next.id, state: 'next' } : null
 }

@@ -131,3 +131,19 @@ describe('parseTripData 的住宿', () => {
     expect(parse({ stay: 5, lat: null, lng: null })).toEqual({ date: '2030-05-01', city: '', note: '' })
   })
 })
+
+describe('parseTripData 的順序欄位', () => {
+  const base = {
+    trip: { title: 't', start_date: '2027-01-09', end_date: '2027-01-10' },
+    items: [{ id: 'a', day: '2027-01-09', title: 'x', kind: 'all', order: 2 }],
+  }
+
+  it('數字就留著', () => {
+    expect(parseTripData(base).items[0].order).toBe(2)
+  })
+
+  it('不是數字就整個拿掉', () => {
+    const broken = { ...base, items: [{ ...base.items[0], order: '2' }] }
+    expect('order' in parseTripData(broken).items[0]).toBe(false)
+  })
+})

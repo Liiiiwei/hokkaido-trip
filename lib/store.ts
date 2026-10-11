@@ -1,7 +1,7 @@
 import { setTrip } from './changes'
 import { StoreError } from './errors'
 import { commit, readFile, writeFile, type Io, type Snapshot } from './github'
-import { applyChange } from './state'
+import { applyChange, mergePatch } from './state'
 import type { Day, Item, ItemInput, ItemMember, Trip, TripData } from './types'
 import { STALE_EVENT, versionStatus } from './version'
 
@@ -79,7 +79,7 @@ export async function updateItem(id: string, patch: Partial<ItemInput>): Promise
     const current = d.items.find((i) => i.id === id)
     // 已經被別人刪掉就不要把它變回來
     if (!current) throw new StoreError('gone')
-    row = { ...current, ...patch, updated_at: new Date().toISOString() }
+    row = mergePatch(current, patch, new Date().toISOString())
     return applyChange(d, { table: 'items', eventType: 'UPDATE', new: row, old: null })
   }, '更新行程')
   if (!row) throw new StoreError('gone')
@@ -90,6 +90,20 @@ export async function deleteItem(id: string): Promise<void> {
   await mutate(
     (d) => applyChange(d, { table: 'items', eventType: 'DELETE', new: null, old: { id } }),
     '刪除行程',
+  )
+}
+
+// ids 是調整後由前到後的順序；只動這幾筆的順序欄位，其他欄位保留遠端最新的值
+export function reorderItems(ids: string[]): Promise<TripData> {
+  return mutate(
+    (d) => ({
+      ...d,
+      items: d.items.map((i) => {
+        const order = ids.indexOf(i.id)
+        return order < 0 || i.order === order ? i : { ...i, order }
+      }),
+    }),
+    '調整行程順序',
   )
 }
 

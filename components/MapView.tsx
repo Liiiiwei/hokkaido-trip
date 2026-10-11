@@ -57,9 +57,13 @@ export function MapView({
           maxZoom: 19,
           attribution: '&copy; OpenStreetMap',
         }).addTo(map)
+        // 連線用文字的顏色：淺色模式是深藍，深色模式是亮色，壓在地圖上才看得到
+        const ink =
+          getComputedStyle(document.documentElement).getPropertyValue('--color-ink').trim() ||
+          '#0e1a2b'
         for (const line of content.lines) {
           if (line.length > 1) {
-            L.polyline(line, { color: '#0e1a2b', weight: 3, opacity: 0.6 }).addTo(map)
+            L.polyline(line, { color: ink, weight: 3, opacity: 0.6 }).addTo(map)
           }
         }
         for (const m of content.markers) {
@@ -143,7 +147,7 @@ export function MapLegend({ stopLabel }: { stopLabel: string }) {
         {stopLabel}
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-3 w-3 rounded-[3px] border-2 border-signal bg-white" />
+        <span className="inline-block h-3 w-3 rounded-[3px] border-2 border-signal bg-surface" />
         住宿
       </span>
     </p>

@@ -42,6 +42,9 @@ export function RenameForm({
         <Field label="你的名字或暱稱">
           <input
             className={inputClass}
+            enterKeyHint="done"
+            autoComplete="nickname"
+            autoCorrect="off"
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             maxLength={40}

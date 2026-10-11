@@ -30,7 +30,7 @@ export function DayStrip({
   }, [current])
 
   return (
-    <nav aria-label="日期" className="flex gap-2 overflow-x-auto px-4 pb-3 pt-2.5 [scrollbar-width:none]">
+    <nav aria-label="日期" className="flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-3 pt-2.5 [scrollbar-width:none]">
       {dates.map((date) => {
         const active = date === current
         const city = days.find((d) => d.date === date)?.city ?? ''
@@ -46,7 +46,7 @@ export function DayStrip({
             className={`relative flex min-w-[4.25rem] shrink-0 flex-col items-center rounded-2xl border px-3 pb-2 pt-1.5 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
               active
                 ? 'border-signal bg-signal text-white'
-                : 'border-ink/12 bg-white text-ink active:bg-ink/5'
+                : 'border-ink/12 bg-surface text-ink active:bg-ink/5'
             }`}
           >
             {/* 讀出來的順序是日期在前；畫面上星期排在日期上面 */}

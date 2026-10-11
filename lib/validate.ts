@@ -51,8 +51,8 @@ export function parseTripData(value: unknown): TripData {
   })
   const items: Item[] = records(value.items).map((i) => {
     if (i.kind !== 'all' && i.kind !== 'split') throw new StoreError('bad_data')
-    // 這三個選填欄位壞掉時要整個拿掉，所以先從原資料抽出來
-    const { lat, lng, arrive_place, ...rest } = i
+    // 這幾個選填欄位壞掉時要整個拿掉，所以先從原資料抽出來
+    const { lat, lng, arrive_place, order, ...rest } = i
     return {
       ...rest,
       id: required(i.id),
@@ -65,6 +65,7 @@ export function parseTripData(value: unknown): TripData {
       kind: i.kind,
       ...coords(lat, lng),
       ...(typeof arrive_place === 'string' && arrive_place !== '' ? { arrive_place } : {}),
+      ...(typeof order === 'number' && Number.isFinite(order) ? { order } : {}),
       created_by: text(i.created_by),
       updated_at: text(i.updated_at),
     }

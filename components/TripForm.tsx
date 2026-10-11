@@ -53,6 +53,7 @@ export function TripForm({
         <Field label="旅程名稱">
           <input
             className={inputClass}
+            enterKeyHint="done"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={30}

@@ -2,6 +2,7 @@
 
 import { Check, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
+import { buzz } from '@/lib/haptics'
 import { dayLabel } from '@/lib/schedule'
 import type { Change } from '@/lib/state'
 import { upsertDay } from '@/lib/store'
@@ -46,6 +47,7 @@ export function DayForm({
               lng: pin?.lng ?? null,
             })
             apply({ table: 'days', eventType: 'UPDATE', new: row, old: null })
+            buzz(10)
             onClose()
           })
         }}
@@ -53,6 +55,7 @@ export function DayForm({
         <Field label="當晚住的城市">
           <input
             className={inputClass}
+            enterKeyHint="done"
             value={city}
             onChange={(e) => setCity(e.target.value)}
             maxLength={20}
@@ -62,6 +65,7 @@ export function DayForm({
         <Field label="住宿名稱">
           <input
             className={inputClass}
+            enterKeyHint="done"
             value={stay}
             onChange={(e) => {
               // 名稱改了，原本的定位就不一定對，清掉讓人重找

@@ -9,7 +9,11 @@ import {
   Navigation,
   Pencil,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { messageOf } from '@/lib/errors'
+import { axisOf, dayStep, rubberband, velocityOf, type Sample } from '@/lib/gesture'
+import { buzz } from '@/lib/haptics'
+import { reducedMotion } from '@/lib/motion'
 import {
   driveLeg,
   googleTransitUrl,
@@ -20,14 +24,16 @@ import {
   stayPinsOf,
   staySpot,
 } from '@/lib/maps'
-import { buildBlocks, dayLabel, filterMine, membersOf } from '@/lib/schedule'
+import { buildBlocks, dayLabel, filterMine, liveStop, membersOf, tieGroup } from '@/lib/schedule'
 import type { Change } from '@/lib/state'
 import type { Item, TripData } from '@/lib/types'
 import { DriveNote } from './DriveNote'
 import { ItemCard } from './ItemCard'
 import { MapLegend, MapView, type MapMarker } from './MapView'
 import { RichText } from './RichText'
+import { InstallTip } from './InstallTip'
 import { ghostClass } from './ui'
+import { useReorder } from './useReorder'
 
 const ring =
   'transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -52,6 +58,10 @@ function Row({
 }) {
   return (
     <li
+      // 進場動畫播完就拿掉：之後拖曳調順序會搬動這一列，還掛著的話整列會再淡入一次
+      onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget) event.currentTarget.classList.remove('rise')
+      }}
       className="rise grid grid-cols-[2.75rem_1fr] gap-x-5"
       style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
     >
@@ -88,10 +98,21 @@ export function DayPanel({
   onEditItem,
   onAdd,
   apply,
+  clock,
+  canStep,
+  onStep,
+  reorder,
 }: {
   data: TripData
   date: string
   me: string
+  // 這一天是今天時才有：現在幾點（HH:MM），用來標出下一站
+  clock: string | null
+  // 往前（-1）或往後（1）還有沒有日子
+  canStep: (dir: -1 | 1) => boolean
+  onStep: (dir: -1 | 1) => void
+  // 存下同一組行程的新順序；失敗時丟出錯誤
+  reorder: (ids: string[]) => Promise<void>
   onEditDay: () => void
   onEditItem: (item: Item) => void
   onAdd: () => void
@@ -110,7 +131,128 @@ export function DayPanel({
   const tonight = staySpot(day)
   const last = lastStop(mine)
   const back = tonight ? driveLeg(last, tonight) : null
-  const [mapOpen, setMapOpen] = useState(true)
+  // 地圖的收合：opening、closing 是動作還在播的那一小段
+  const [map, setMap] = useState<'open' | 'opening' | 'closing' | 'closed'>('open')
+  const mapTimer = useRef(0)
+  const mapOpen = map === 'open' || map === 'opening'
+  useEffect(() => () => window.clearTimeout(mapTimer.current), [])
+
+  function toggleMap() {
+    window.clearTimeout(mapTimer.current)
+    const reduced = reducedMotion()
+    if (mapOpen) {
+      // 收起的動作播完才真的拿掉地圖
+      setMap(reduced ? 'closed' : 'closing')
+      if (!reduced) mapTimer.current = window.setTimeout(() => setMap('closed'), 300)
+    } else {
+      // 先以收起的樣子放上畫面，下一個畫格再展開，才看得到展開的過程
+      setMap(reduced ? 'open' : 'opening')
+      if (!reduced) mapTimer.current = window.setTimeout(() => setMap('open'), 30)
+    }
+  }
+
+  // 今天的下一站（或正在進行的那一筆）
+  const live = clock ? liveStop(mine, clock) : null
+  const liveId = live?.id
+  // 剛打開網站時直接捲到那一筆。只在這個面板第一次出現時做：
+  // 之後切到今天、或時間走到下一筆，都不再自己捲，使用者捲到哪就留在哪
+  useEffect(() => {
+    if (!liveId) return
+    document
+      .querySelector(`[data-sort-id="${CSS.escape(liveId)}"]`)
+      ?.scrollIntoView({ block: 'start' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const [sortError, setSortError] = useState<string | null>(null)
+  const sorter = useReorder((ids) => {
+    setSortError(null)
+    reorder(ids).then(
+      () => buzz(10),
+      (e: unknown) => setSortError(messageOf(e)),
+    )
+  })
+
+  // 卡片以外的地方左右滑：換到前一天或後一天
+  const track = useRef<HTMLDivElement>(null)
+  const swipe = useRef<{
+    id: number
+    x: number
+    y: number
+    dx: number
+    active: boolean
+    samples: Sample[]
+  } | null>(null)
+  const swallowClick = useRef(false)
+
+  const onPointerDown = (event: PointerEvent<HTMLElement>) => {
+    swallowClick.current = false
+    if (event.pointerType === 'mouse' || swipe.current) return
+    // 卡片有自己的左滑，地圖有自己的手勢
+    if ((event.target as HTMLElement).closest('[data-card], .leaflet-container')) return
+    swipe.current = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      dx: 0,
+      active: false,
+      samples: [],
+    }
+  }
+
+  const onPointerMove = (event: PointerEvent<HTMLElement>) => {
+    const s = swipe.current
+    if (!s || event.pointerId !== s.id) return
+    const dx = event.clientX - s.x
+    if (!s.active) {
+      const axis = axisOf(dx, event.clientY - s.y)
+      if (!axis) return
+      if (axis === 'y') {
+        swipe.current = null
+        return
+      }
+      s.active = true
+      swallowClick.current = true
+      event.currentTarget.dataset.dragging = ''
+      event.currentTarget.setPointerCapture(s.id)
+    }
+    s.dx = dx
+    // 那個方向沒有日子了：拉得動一點點，放手彈回來
+    const blocked = !canStep(dx < 0 ? 1 : -1)
+    const x = blocked ? rubberband(dx, event.currentTarget.offsetWidth) * 0.4 : dx
+    if (track.current && !reducedMotion()) {
+      track.current.style.transform = `translate3d(${x}px, 0, 0)`
+    }
+    s.samples.push({ t: event.timeStamp, y: dx })
+    if (s.samples.length > 8) s.samples.shift()
+  }
+
+  const onPointerEnd = (event: PointerEvent<HTMLElement>) => {
+    const s = swipe.current
+    if (!s || event.pointerId !== s.id) return
+    swipe.current = null
+    if (!s.active) return
+    const zone = event.currentTarget
+    const step =
+      event.type === 'pointercancel'
+        ? 0
+        : dayStep({
+            offset: s.dx,
+            velocity: velocityOf(s.samples, event.timeStamp),
+            width: zone.offsetWidth,
+          })
+    if (step !== 0 && canStep(step)) {
+      // 換日：舊內容不用滑回來，直接歸位，新的一天會從滑動的方向進場
+      if (track.current) track.current.style.transform = ''
+      buzz(6)
+      onStep(step)
+      // 等歸位套用了再把動畫開回來
+      requestAnimationFrame(() => delete zone.dataset.dragging)
+      return
+    }
+    delete zone.dataset.dragging
+    if (track.current) track.current.style.transform = ''
+  }
 
   const markers: MapMarker[] = [
     ...stays.map((s) => ({ ...s, kind: 'stay' as const, text: '', title: `住宿：${s.title}` })),
@@ -126,165 +268,205 @@ export function DayPanel({
     .filter(Boolean)
     .join('、')
 
-  const card = (item: Item) => (
-    <ItemCard
-      key={item.id}
-      item={item}
-      members={membersOf(item.id, data.itemMembers)}
-      me={me}
-      pinNo={pins.find((p) => p.id === item.id)?.n}
-      from={previousStop(mine, item) ?? morning}
-      onEdit={onEditItem}
-      apply={apply}
-    />
-  )
+  const card = (item: Item) => {
+    const group = tieGroup(todays, item)
+    return (
+      <ItemCard
+        key={item.id}
+        item={item}
+        members={membersOf(item.id, data.itemMembers)}
+        me={me}
+        live={live?.id === item.id ? live.state : undefined}
+        sort={group.length > 1 ? { ids: group.map((i) => i.id), sorter } : undefined}
+        pinNo={pins.find((p) => p.id === item.id)?.n}
+        from={previousStop(mine, item) ?? morning}
+        onEdit={onEditItem}
+        apply={apply}
+      />
+    )
+  }
 
   return (
-    <section className="px-4 pb-28 pt-3">
-      <div
-        data-testid="stay-card"
-        className="ticket flex items-start gap-3 rounded-2xl bg-white py-3 pl-3 pr-1"
-      >
-        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-signal bg-white text-signal">
-          <BedDouble size={18} />
-        </span>
-        <div className="min-w-0 flex-1 py-0.5">
-          <p className="text-xs text-zinc-500">
-            <span className="font-mono">{dayLabel(date)}</span> 住宿
-            {day?.stay && day.city ? ` · ${day.city}` : ''}
-          </p>
-          <p
-            className={`break-words text-[17px] font-semibold leading-snug tracking-tight ${
-              day?.stay || day?.city ? '' : 'text-zinc-400'
-            }`}
-          >
-            {day?.stay || day?.city || '還沒填住哪裡'}
-          </p>
-          {day?.note && <RichText text={day.note} className="mt-1 text-sm text-zinc-500" />}
-        </div>
-        <button
-          type="button"
-          onClick={onEditDay}
-          aria-label={`編輯 ${dayLabel(date)} 的住宿與備註`}
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 active:bg-zinc-100 ${ring}`}
+    <section
+      data-testid="day-swipe"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      onClickCapture={(event) => {
+        if (!swallowClick.current) return
+        swallowClick.current = false
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      className="day-swipe min-h-[calc(100dvh-8rem)] px-4 pb-28 pt-3"
+    >
+      <div ref={track} className="day-track">
+        <div
+          key={`stay-${date}`}
+          data-testid="stay-card"
+          className="rise ticket flex items-start gap-3 rounded-2xl bg-surface py-3 pl-3 pr-1"
         >
-          <Pencil size={16} />
-        </button>
-      </div>
-
-      <div className="mt-2 flex items-center gap-2">
-        {markers.length > 0 ? (
+          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-accent bg-surface text-accent">
+            <BedDouble size={18} />
+          </span>
+          <div className="min-w-0 flex-1 py-0.5">
+            <p className="text-xs text-zinc-500">
+              <span className="font-mono">{dayLabel(date)}</span> 住宿
+              {day?.stay && day.city ? ` · ${day.city}` : ''}
+            </p>
+            <p
+              className={`break-words text-[17px] font-semibold leading-snug tracking-tight ${
+                day?.stay || day?.city ? '' : 'text-zinc-400'
+              }`}
+            >
+              {day?.stay || day?.city || '還沒填住哪裡'}
+            </p>
+            {day?.note && <RichText text={day.note} className="mt-1 text-sm text-zinc-500" />}
+          </div>
           <button
             type="button"
-            aria-expanded={mapOpen}
-            onClick={() => setMapOpen((open) => !open)}
-            className={`flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-ink/15 bg-white px-3 text-sm text-ink active:bg-zinc-100 ${ring}`}
+            onClick={onEditDay}
+            aria-label={`編輯 ${dayLabel(date)} 的住宿與備註`}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 active:bg-zinc-100 ${ring}`}
           >
-            <MapIcon size={16} className="shrink-0" />
-            <span className="min-w-0 flex-1 truncate text-left">當天地圖 · {summary}</span>
-            {mapOpen ? (
-              <ChevronUp size={16} className="shrink-0 text-zinc-500" />
-            ) : (
-              <ChevronDown size={16} className="shrink-0 text-zinc-500" />
-            )}
+            <Pencil size={16} />
           </button>
-        ) : (
-          <p className="min-w-0 flex-1 text-xs leading-snug text-zinc-500">
-            {todays.length > 0 ? '在行程的地點旁按「找地點」，這天的地圖就會出現。' : ''}
+        </div>
+
+        <div className="mt-2 flex items-center gap-2">
+          {markers.length > 0 ? (
+            <button
+              type="button"
+              aria-expanded={mapOpen}
+              onClick={toggleMap}
+              className={`flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-ink/15 bg-surface px-3 text-sm text-ink active:bg-zinc-100 ${ring}`}
+            >
+              <MapIcon size={16} className="shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-left">當天地圖 · {summary}</span>
+              {mapOpen ? (
+                <ChevronUp size={16} className="shrink-0 text-zinc-500" />
+              ) : (
+                <ChevronDown size={16} className="shrink-0 text-zinc-500" />
+              )}
+            </button>
+          ) : (
+            <p className="min-w-0 flex-1 text-xs leading-snug text-zinc-500">
+              {todays.length > 0 ? '在行程的地點旁按「找地點」，這天的地圖就會出現。' : ''}
+            </p>
+          )}
+        </div>
+        {map !== 'closed' && markers.length > 0 && (
+          <div className="fold" data-open={map === 'open' ? '' : undefined}>
+            <div>
+              <div className="pt-2">
+                <MapView
+                  markers={markers}
+                  lines={[pins.map((p) => [p.lat, p.lng])]}
+                  lockDragOnTouch
+                />
+                <MapLegend stopLabel="行程順序（卡片上的數字）" />
+                {/* 只在觸控裝置顯示：手機上單指留給捲動頁面 */}
+                <p className="mt-1 hidden text-xs text-zinc-500 [@media(pointer:coarse)]:block">
+                  單指滑動是捲頁面，雙指可以縮放地圖；要拖動地圖請開右上角的全程地圖。
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {sortError && (
+          <p role="alert" className="mt-3 text-sm text-red-700">
+            順序沒存成功：{sortError}
           </p>
         )}
-      </div>
-      {mapOpen && markers.length > 0 && (
-        <div className="mt-2">
-          <MapView markers={markers} lines={[pins.map((p) => [p.lat, p.lng])]} lockDragOnTouch />
-          <MapLegend stopLabel="行程順序（卡片上的數字）" />
-          {/* 只在觸控裝置顯示：手機上單指留給捲動頁面 */}
-          <p className="mt-1 hidden text-xs text-zinc-500 [@media(pointer:coarse)]:block">
-            單指滑動是捲頁面，雙指可以縮放地圖；要拖動地圖請開右上角的全程地圖。
-          </p>
-        </div>
-      )}
 
-      {blocks.length === 0 ? (
-        <div className="mt-10 flex flex-col items-center text-center">
-          <CalendarPlus size={28} className="text-zinc-300" />
-          <p className="mt-2 text-sm text-zinc-500">這天還沒有行程</p>
-          <button type="button" onClick={onAdd} className={`${ghostClass} mt-3`}>
-            <CalendarPlus size={16} />
-            新增第一個行程
-          </button>
-        </div>
-      ) : (
-        // key 帶日期：換一天時整條時間軸重新進場
-        <ol
-          key={date}
-          className="relative mt-4 space-y-3 before:absolute before:bottom-3 before:left-[3.375rem] before:top-3 before:w-px before:bg-ink/20"
-        >
-          {blocks.map((block, index) =>
-            block.type === 'all' ? (
-              <Row
-                key={block.item.id}
-                start={block.item.start_time}
-                end={block.item.end_time}
-                index={index}
-              >
-                {card(block.item)}
-              </Row>
-            ) : (
-              <Row
-                key={`split-${block.startTime ?? 'none'}-${block.items[0].id}`}
-                start={block.startTime}
-                hollow
-                index={index}
-              >
-                <div className="rounded-[1.25rem] border border-dashed border-ink/35 bg-white/50 p-2">
-                  <div className="px-2 pb-2 pt-0.5 text-xs font-semibold text-ink/70">
-                    分開行動 · 選想去的加入
+        {blocks.length === 0 ? (
+          <div className="mt-10 flex flex-col items-center text-center">
+            <CalendarPlus size={28} className="text-zinc-300" />
+            <p className="mt-2 text-sm text-zinc-500">這天還沒有行程</p>
+            <button type="button" onClick={onAdd} className={`${ghostClass} mt-3`}>
+              <CalendarPlus size={16} />
+              新增第一個行程
+            </button>
+          </div>
+        ) : (
+          // key 帶日期：換一天時整條時間軸重新進場
+          <ol
+            key={date}
+            className="relative mt-4 space-y-3 before:absolute before:bottom-3 before:left-[3.375rem] before:top-3 before:w-px before:bg-ink/20"
+          >
+            {blocks.map((block, index) =>
+              block.type === 'all' ? (
+                <Row
+                  key={block.item.id}
+                  start={block.item.start_time}
+                  end={block.item.end_time}
+                  index={index}
+                >
+                  {card(block.item)}
+                </Row>
+              ) : (
+                <Row
+                  key={`split-${block.startTime ?? 'none'}-${block.items[0].id}`}
+                  start={block.startTime}
+                  hollow
+                  index={index}
+                >
+                  <div className="rounded-[1.25rem] border border-dashed border-ink/35 bg-surface/50 p-2">
+                    <div className="px-2 pb-2 pt-0.5 text-xs font-semibold text-ink/70">
+                      分開行動 · 選想去的加入
+                    </div>
+                    <div className="space-y-2">{block.items.map(card)}</div>
                   </div>
-                  <div className="space-y-2">{block.items.map(card)}</div>
+                </Row>
+              ),
+            )}
+            {tonight && last && (
+              <Row
+                start={null}
+                index={blocks.length}
+                gutter={
+                  <span className="flex justify-end pt-0.5 text-zinc-500">
+                    <BedDouble size={16} />
+                  </span>
+                }
+              >
+                <div data-testid="return-leg" className="ticket rounded-2xl bg-surface px-4 py-3">
+                  <p className="text-xs text-zinc-500">回住宿</p>
+                  <p className="break-words text-[15px] font-semibold tracking-tight">
+                    {tonight.title}
+                  </p>
+                  {back && (
+                    <DriveNote
+                      fromTitle={last.title}
+                      from={back.from}
+                      to={back.to}
+                      className="mt-1"
+                    />
+                  )}
+                  <a
+                    href={googleTransitUrl(last, tonight)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`怎麼去：從「${last.title}」回住宿`}
+                    className={`control mt-2 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-surface text-sm text-zinc-800 active:bg-zinc-100 ${ring}`}
+                  >
+                    <Navigation size={16} />
+                    怎麼去
+                  </a>
                 </div>
               </Row>
-            ),
-          )}
-          {tonight && last && (
-            <Row
-              start={null}
-              index={blocks.length}
-              gutter={
-                <span className="flex justify-end pt-0.5 text-zinc-500">
-                  <BedDouble size={16} />
-                </span>
-              }
-            >
-              <div
-                data-testid="return-leg"
-                className="ticket rounded-2xl bg-white px-4 py-3"
-              >
-                <p className="text-xs text-zinc-500">回住宿</p>
-                <p className="break-words text-[15px] font-semibold tracking-tight">{tonight.title}</p>
-                {back && (
-                  <DriveNote fromTitle={last.title} from={back.from} to={back.to} className="mt-1" />
-                )}
-                <a
-                  href={googleTransitUrl(last, tonight)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`怎麼去：從「${last.title}」回住宿`}
-                  className={`mt-2 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-800 active:bg-zinc-100 ${ring}`}
-                >
-                  <Navigation size={16} />
-                  怎麼去
-                </a>
-              </div>
-            </Row>
-          )}
-          {pins.length > 0 && (
-            <li className="pl-[3.9rem] text-xs leading-snug text-zinc-500">
-              車程是開車的估計。電車、巴士的班次與搭車地點請按「怎麼去」。
-            </li>
-          )}
-        </ol>
-      )}
+            )}
+            {pins.length > 0 && (
+              <li className="pl-[3.9rem] text-xs leading-snug text-zinc-500">
+                車程是開車的估計。電車、巴士的班次與搭車地點請按「怎麼去」。
+              </li>
+            )}
+          </ol>
+        )}
+        <InstallTip />
+      </div>
     </section>
   )
 }

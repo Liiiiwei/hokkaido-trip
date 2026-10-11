@@ -26,6 +26,8 @@ export type Item = {
   // 在地圖上定位過才有
   lat?: number | null
   lng?: number | null
+  // 同一天、同一個開始時間的行程之間誰先誰後；拖曳調整過才有
+  order?: number
   created_by: string
   updated_at: string
 }

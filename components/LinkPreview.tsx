@@ -17,7 +17,7 @@ export function LinkPreview({ text }: { text: string }) {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-zinc-300 bg-white px-2.5 py-1 text-sm font-medium text-accent transition-colors active:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-zinc-300 bg-surface px-2.5 py-1 text-sm font-medium text-accent transition-colors active:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <span className="truncate">{link.label}</span>
               <ArrowUpRight size={14} className="shrink-0" />

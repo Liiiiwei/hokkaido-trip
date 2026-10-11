@@ -11,17 +11,18 @@ import {
   type ReactNode,
 } from 'react'
 import { rubberband, shouldDismiss, springAt, velocityOf, type Sample } from '@/lib/gesture'
+import { reducedMotion } from '@/lib/motion'
 
 // 用鍵盤操作時看得到焦點；按下去的回饋在 globals.css
 const press =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 export const inputClass =
-  'h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-base outline-none transition-colors focus:border-accent'
+  'h-11 w-full rounded-lg border border-zinc-300 bg-surface px-3 text-base outline-none transition-colors focus:border-accent'
 
 export const primaryClass = `inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-signal px-4 text-base font-semibold text-white active:bg-signal-deep disabled:opacity-50 ${press}`
 
-export const ghostClass = `inline-flex h-11 items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-4 text-sm text-zinc-700 active:bg-zinc-100 disabled:opacity-50 ${press}`
+export const ghostClass = `inline-flex h-11 items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-surface px-4 text-sm text-zinc-700 active:bg-zinc-100 disabled:opacity-50 ${press}`
 
 // 面板要收起時先播完離開的動作，再真的拿掉
 const SheetPresence = createContext<{ closing: boolean; onExited: () => void } | null>(null)
@@ -42,10 +43,6 @@ export function SheetHost({
 const RESPONSE = 0.36
 // 手指動超過這個距離才算拖曳，避免點一下也被當成拖
 const SLOP = 10
-
-function reducedMotion() {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
 
 // 從底部滑出的面板，進出走同一條路。
 // 表單面板只有「關閉」能收起：手機上很容易誤觸，打到一半的內容會不見；
@@ -189,7 +186,7 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="sheet-panel relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0_0_0/0.12)] sm:rounded-2xl"
+        className="sheet-panel relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0_0_0/0.12)] sm:rounded-2xl"
       >
         {/* 標題列黏在上面：內容再長，「關閉」都按得到；也是拖曳的把手 */}
         <div
@@ -198,7 +195,7 @@ export function Sheet({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
-          className="sticky -top-4 z-10 -mx-4 -mt-4 mb-3 flex touch-none select-none items-center justify-between bg-white px-4 pb-1 pt-3 before:absolute before:left-1/2 before:top-1.5 before:h-1 before:w-9 before:-translate-x-1/2 before:rounded-full before:bg-zinc-300 sm:before:hidden"
+          className="sticky -top-4 z-10 -mx-4 -mt-4 mb-3 flex touch-none select-none items-center justify-between bg-surface px-4 pb-1 pt-3 before:absolute before:left-1/2 before:top-1.5 before:h-1 before:w-9 before:-translate-x-1/2 before:rounded-full before:bg-zinc-300 sm:before:hidden"
         >
           <h2 className="text-base font-semibold tracking-tight">{title}</h2>
           <button

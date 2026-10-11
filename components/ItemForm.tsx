@@ -3,6 +3,7 @@
 import { Check, LoaderCircle, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { dayLabel } from '@/lib/schedule'
+import { buzz } from '@/lib/haptics'
 import { newId } from '@/lib/id'
 import { changedFields, type Change } from '@/lib/state'
 import { createItem, deleteItem, updateItem } from '@/lib/store'
@@ -68,6 +69,7 @@ export function ItemForm({
         ? await updateItem(item.id, changedFields(item, input))
         : await createItem(input, me, freshId)
       apply({ table: 'items', eventType: item ? 'UPDATE' : 'INSERT', new: row, old: null })
+      buzz(10)
       onClose()
     })
   }
@@ -88,6 +90,7 @@ export function ItemForm({
     void remove.run(async () => {
       await deleteItem(item.id)
       apply({ table: 'items', eventType: 'DELETE', new: null, old: { id: item.id } })
+      buzz([10, 40, 10])
       onClose()
     })
   }
@@ -117,7 +120,7 @@ export function ItemForm({
               <label
                 key={value}
                 className={`flex h-11 items-center justify-center gap-2 rounded-lg border text-sm ${
-                  kind === value ? 'border-ink bg-ink font-semibold text-white' : 'border-zinc-300'
+                  kind === value ? 'border-ink bg-ink font-semibold text-on-ink' : 'border-zinc-300'
                 }`}
               >
                 <input
@@ -155,6 +158,7 @@ export function ItemForm({
         <Field label="標題">
           <input
             className={inputClass}
+            enterKeyHint="done"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={60}
@@ -164,6 +168,7 @@ export function ItemForm({
         <Field label="地點">
           <input
             className={inputClass}
+            enterKeyHint="done"
             value={place}
             onChange={(e) => onPlaceChange(e.target.value)}
             maxLength={80}
@@ -173,6 +178,7 @@ export function ItemForm({
         <Field label="抵達機場／車站">
           <input
             className={inputClass}
+            enterKeyHint="done"
             value={arrive}
             onChange={(e) => setArrive(e.target.value)}
             maxLength={80}

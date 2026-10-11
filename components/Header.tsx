@@ -40,7 +40,7 @@ export function Header({
         type="button"
         onClick={onOpenMap}
         aria-label="全程地圖"
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-ink/15 bg-white text-ink active:bg-ink/5 ${ring}`}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-ink/15 bg-surface text-ink active:bg-ink/5 ${ring}`}
       >
         <MapIcon size={18} />
       </button>
@@ -48,7 +48,7 @@ export function Header({
         type="button"
         onClick={onRename}
         aria-label={`目前身分 ${me}，點此改名`}
-        className={`inline-flex h-11 max-w-[34%] shrink-0 items-center gap-1.5 rounded-full border border-ink/15 bg-white px-3 text-sm text-ink active:bg-ink/5 ${ring}`}
+        className={`inline-flex h-11 max-w-[34%] shrink-0 items-center gap-1.5 rounded-full border border-ink/15 bg-surface px-3 text-sm text-ink active:bg-ink/5 ${ring}`}
       >
         <User size={16} className="shrink-0 text-ink/50" />
         <span className="truncate">{me}</span>
