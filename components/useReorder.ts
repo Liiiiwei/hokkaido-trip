@@ -42,6 +42,12 @@ function reset(els: HTMLElement[]) {
   for (const el of els) el.style.transition = ''
 }
 
+// 拿著卡片時整頁不能捲。iPhone 在手指剛開始動的那一下就決定這次要不要捲頁面，
+// 長按期間手指難免晃一下，等卡片拿起來才攔已經來不及，所以直接把頁面設成不能捲
+function lockScroll(on: boolean) {
+  document.documentElement.style.overflow = on ? 'hidden' : ''
+}
+
 // 同一組卡片的拖曳排序：拿起來的那張跟著手指，其他張即時讓位，放手後回報新順序
 function createSorter() {
   const live: { current: Live | null } = { current: null }
@@ -69,6 +75,7 @@ function createSorter() {
       startY: clientY + window.scrollY,
       settle: 0,
     }
+    lockScroll(true)
     found[from].dataset.lifted = ''
     found[from].style.transform = 'scale(1.02)'
     buzz(12)
@@ -97,6 +104,7 @@ function createSorter() {
     const s = live.current
     live.current = null
     if (!s) return
+    lockScroll(false)
     const el = s.els[s.from]
     delete el.dataset.lifted
     el.dataset.settling = ''
@@ -115,12 +123,15 @@ function createSorter() {
   const cancel: Sorter['cancel'] = () => {
     const s = live.current
     live.current = null
-    if (s) reset(s.els)
+    if (!s) return
+    lockScroll(false)
+    reset(s.els)
   }
 
   const sorter: Sorter = { begin, move, end, cancel }
   return {
     sorter,
+    active: () => live.current !== null,
     listen: (fn: (ids: string[]) => void) => {
       drop.current = fn
     },
@@ -133,5 +144,18 @@ export function useReorder(onDrop: (ids: string[]) => void): Sorter {
   useEffect(() => {
     handle.listen(onDrop)
   })
+  // 拿著卡片時手指的移動不算捲頁面。要整頁一開始就掛著才有用：
+  // iPhone 只認手指按下之前就在的監聽，而且掛在整份文件上最保險
+  useEffect(() => {
+    const block = (event: TouchEvent) => {
+      if (handle.active() && event.cancelable) event.preventDefault()
+    }
+    document.addEventListener('touchmove', block, { passive: false })
+    return () => {
+      document.removeEventListener('touchmove', block)
+      // 拖到一半整個畫面被換掉時，別把頁面留在不能捲的狀態
+      if (handle.active()) lockScroll(false)
+    }
+  }, [handle])
   return handle.sorter
 }

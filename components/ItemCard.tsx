@@ -112,18 +112,6 @@ export function ItemCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  // 長按拿起卡片之後，手指上下移動是在拖卡片，不能讓頁面跟著捲。
-  // 這個要在瀏覽器決定捲動之前攔下來，所以直接掛在元素上
-  useEffect(() => {
-    const el = wrap.current
-    if (!el) return
-    const block = (event: TouchEvent) => {
-      if (touch.current?.mode === 'sort' && event.cancelable) event.preventDefault()
-    }
-    el.addEventListener('touchmove', block, { passive: false })
-    return () => el.removeEventListener('touchmove', block)
-  }, [])
-
   // 拖到一半卡片被拿掉（別人刪了這筆、換日）就收不到放手的事件，要自己把其他卡片歸位
   const sorterRef = useRef(sort?.sorter)
   useEffect(() => {
@@ -287,7 +275,12 @@ export function ItemCard({
     >
       {/* 藏在卡片後面的動作，卡片往左滑才露出來；收著的時候鍵盤和讀螢幕軟體都碰不到。
           往內縮一點並跟著卡片的圓角，才不會從卡片的圓角邊緣透出顏色 */}
-      <div data-card-actions inert={!open} aria-hidden={!open} className="absolute inset-y-px right-px flex overflow-hidden rounded-r-[15px]">
+      <div
+        data-card-actions
+        inert={!open}
+        aria-hidden={!open}
+        className="absolute inset-y-px right-px flex overflow-hidden rounded-r-[15px]"
+      >
         <button
           type="button"
           onClick={() => {
